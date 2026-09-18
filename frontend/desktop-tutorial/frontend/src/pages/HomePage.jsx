@@ -1,0 +1,575 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getDistricts, getMandiPrices, getWeather, getFollowUps, completeFollowUp } from '../api/cropApi';
+import { useLanguage } from '../context/LanguageContext';
+
+const crops = ['Rice', 'Potato', 'Jute', 'Mustard', 'Tea', 'Tomato', 'Brinjal', 'Chilli', 'Mango', 'Wheat', 'Maize'];
+const typicalPrices = { Rice: 2400, Potato: 1800, Jute: 5200, Mustard: 6200, Tea: 22000, Tomato: 2400, Brinjal: 2600, Chilli: 7000, Mango: 6500, Wheat: 2500, Maize: 2200 };
+const featureText = {
+  en: { today: 'Today on your farm', morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Good night', choose: 'Choose your district for local updates', weather: 'Weather', weatherTask: 'Check soil moisture before irrigating; avoid watering if the soil is still damp.', rainTask: 'Rain is expected. Avoid irrigation and keep harvested produce covered.', chooseTask: 'Choose your district below to get a weather-based task reminder.', price: 'price', nearby: 'nearby', pest: 'Today', pestText: 'Check leaves, soil moisture, and infected plants.', calculator: 'Farm Profit Calculator', calculatorCopy: 'Estimate your crop income before spending money. Change any value to match your own field.', priceUsed: 'Price used', land: 'Land (acres)', crop: 'Crop', seed: 'Seed cost (₹)', fertilizer: 'Fertilizer cost (₹)', labour: 'Labour cost (₹)', production: 'Expected production (quintals)', selling: 'Selling price (₹/quintal)', revenue: 'Expected revenue', cost: 'Total cost', profit: 'Expected profit', loss: 'Expected loss', breakEven: 'Break-even price', estimateNote: 'This is an estimate, not a guarantee.' },
+  bn: { today: 'আজ আপনার খামারে', morning: 'সুপ্রভাত', afternoon: 'শুভ অপরাহ্ন', evening: 'শুভ সন্ধ্যা', night: 'শুভ রাত্রি', choose: 'স্থানীয় তথ্যের জন্য জেলা বেছে নিন', weather: 'আবহাওয়া', weatherTask: 'সেচের আগে মাটির আর্দ্রতা পরীক্ষা করুন; মাটি ভেজা থাকলে জল দেবেন না।', rainTask: 'বৃষ্টির সম্ভাবনা আছে। সেচ বন্ধ রাখুন এবং কাটা ফসল ঢেকে রাখুন।', chooseTask: 'আবহাওয়ার কাজ দেখতে নিচে জেলা বেছে নিন।', price: 'দাম', nearby: 'কাছাকাছি', pest: 'আজ', pestText: 'পাতা, মাটির আর্দ্রতা ও আক্রান্ত গাছ পরীক্ষা করুন।', calculator: 'ফসলের লাভের হিসাব', calculatorCopy: 'খরচের আগে সম্ভাব্য আয় হিসাব করুন। আপনার জমির তথ্য অনুযায়ী মান বদলান।', priceUsed: 'ব্যবহৃত দাম', land: 'জমি (একর)', crop: 'ফসল', seed: 'বীজের খরচ (₹)', fertilizer: 'সারের খরচ (₹)', labour: 'শ্রমিকের খরচ (₹)', production: 'সম্ভাব্য উৎপাদন (কুইন্টাল)', selling: 'বিক্রির দাম (₹/কুইন্টাল)', revenue: 'সম্ভাব্য আয়', cost: 'মোট খরচ', profit: 'সম্ভাব্য লাভ', loss: 'সম্ভাব্য ক্ষতি', breakEven: 'খরচ ওঠার দাম', estimateNote: 'এটি একটি হিসাব, নিশ্চয়তা নয়।' },
+  hi: { today: 'आज आपके खेत पर', morning: 'सुप्रभात', afternoon: 'शुभ दोपहर', evening: 'शुभ संध्या', night: 'शुभ रात्रि', choose: 'स्थानीय जानकारी के लिए जिला चुनें', weather: 'मौसम', weatherTask: 'सिंचाई से पहले मिट्टी की नमी जाँचें; मिट्टी गीली हो तो पानी न दें।', rainTask: 'बारिश की संभावना है। सिंचाई न करें और कटी फसल को ढककर रखें।', chooseTask: 'मौसम आधारित काम देखने के लिए नीचे जिला चुनें।', price: 'भाव', nearby: 'पास में', pest: 'आज', pestText: 'पत्तियों, मिट्टी की नमी और संक्रमित पौधों की जाँच करें।', calculator: 'फसल लाभ कैलकुलेटर', calculatorCopy: 'खर्च करने से पहले अपनी संभावित आय जानें। अपने खेत के अनुसार मान बदलें।', priceUsed: 'इस्तेमाल किया भाव', land: 'जमीन (एकड़)', crop: 'फसल', seed: 'बीज खर्च (₹)', fertilizer: 'उर्वरक खर्च (₹)', labour: 'मजदूरी खर्च (₹)', production: 'अनुमानित उत्पादन (क्विंटल)', selling: 'बिक्री भाव (₹/क्विंटल)', revenue: 'अनुमानित आय', cost: 'कुल खर्च', profit: 'अनुमानित लाभ', loss: 'अनुमानित नुकसान', breakEven: 'लागत वसूली भाव', estimateNote: 'यह अनुमान है, गारंटी नहीं।' },
+};
+const dashboardText = {
+  en: { tabs: ['Weather', 'Market prices', 'Nearby shops'], tag: 'WEST BENGAL FARM SUPPORT', title: 'Grow with clarity, every day.', intro: 'One simple place to check local weather, mandi prices and nearby agricultural supplies before you step into the field.', diagnose: 'Diagnose my crop →', explore: 'Explore local tools', weatherDetail: 'Field-ready view', priceDetail: '7-day trend', shopDetail: 'Near your area', dashboard: 'Farmer dashboard', local: 'Local information, made simple', select: 'Select a district once, then switch tabs to check what matters most today.', area: 'Your area', useLocation: 'Use my location', districtFail: 'Districts could not be loaded. Please refresh and try again.', locating: 'Finding the closest West Bengal district…', nearest: (name) => `Using ${name} as your nearest district.`, locationUnsupported: 'Location is not supported by this browser. Choose your district instead.', locationFail: 'We could not access your location. Choose your district instead.', weatherFail: 'Weather is unavailable at the moment. Please try again shortly.', marketFail: 'Market prices are unavailable at the moment. Please try again shortly.', help: 'Need help with a crop problem?', helpCopy: 'Upload a clear leaf photo and receive an easy treatment advisory.', start: 'Start crop diagnosis', updating: 'Updating weather…', chooseDistrict: 'Choose a district to view its weather.', conditions: (name) => `CURRENT CONDITIONS · ${name}`, weatherUpdate: 'Weather update', celsius: 'Celsius', humidity: 'Humidity', rain: 'Rain', wind: 'Wind', next: 'Next 3 days', low: 'Low', weatherSource: 'District weather service. Check local warnings before spraying or travelling.', marketTitle: (name) => `Mandi prices in ${name}`, marketCopy: 'Prices are in ₹ per quintal. Confirm at the market before selling.', crop: 'Crop', marketLoading: 'Loading market prices…', trend: '7-day price trend', trendCopy: (crop) => `Indicative local trend for ${crop}`, estimate: 'Market estimate', marketName: 'Market', variety: 'Variety', range: 'Range', modal: 'Modal price', date: 'Date', today: 'Today', priceNote: 'Prices may change with quality, variety and arrivals.', near: (name) => `Find supplies near ${name}`, shopsTitle: 'Open nearby farming shops in Maps', shopsCopy: 'Choose what you need. We open a map search for your selected district so you can see current local shops, directions and contact details.', shopNames: ['Seeds & fertiliser', 'Farm equipment', 'Veterinary & feed'], shopDetails: ['Seeds, nutrients and crop protection inputs', 'Tools, pumps, sprayers and repair support', 'Animal feed and livestock supplies'], find: 'Find nearby ↗', shopsNote: 'Shop results and opening times are provided by the map service. Call the shop to confirm stock before travelling.' },
+  bn: { tabs: ['আবহাওয়া', 'বাজারদর', 'কাছের দোকান'], tag: 'পশ্চিমবঙ্গ কৃষক সহায়তা', title: 'প্রতিদিন স্পষ্ট তথ্য নিয়ে চাষ করুন।', intro: 'মাঠে যাওয়ার আগে স্থানীয় আবহাওয়া, বাজারদর ও কাছের কৃষি-সরঞ্জামের তথ্য এক জায়গায় দেখুন।', diagnose: 'আমার ফসল পরীক্ষা করুন →', explore: 'স্থানীয় তথ্য দেখুন', weatherDetail: 'মাঠের জন্য প্রস্তুত', priceDetail: '৭ দিনের প্রবণতা', shopDetail: 'আপনার এলাকার কাছে', dashboard: 'কৃষক ড্যাশবোর্ড', local: 'সহজে স্থানীয় তথ্য', select: 'একবার জেলা বেছে নিন, তারপর প্রয়োজনীয় তথ্য দেখতে ট্যাব বদলান।', area: 'আপনার এলাকা', useLocation: 'আমার অবস্থান ব্যবহার করুন', districtFail: 'জেলার তালিকা লোড করা যায়নি। আবার চেষ্টা করুন।', locating: 'নিকটতম পশ্চিমবঙ্গ জেলা খোঁজা হচ্ছে…', nearest: (name) => `আপনার নিকটতম জেলা হিসেবে ${name} ব্যবহার করা হচ্ছে।`, locationUnsupported: 'এই ব্রাউজারে অবস্থান সুবিধা নেই। অনুগ্রহ করে জেলা বেছে নিন।', locationFail: 'আপনার অবস্থান পাওয়া যায়নি। অনুগ্রহ করে জেলা বেছে নিন।', weatherFail: 'এই মুহূর্তে আবহাওয়ার তথ্য পাওয়া যাচ্ছে না। পরে চেষ্টা করুন।', marketFail: 'এই মুহূর্তে বাজারদর পাওয়া যাচ্ছে না। পরে চেষ্টা করুন।', help: 'ফসলের সমস্যায় সাহায্য দরকার?', helpCopy: 'পাতার পরিষ্কার ছবি আপলোড করে সহজ চিকিৎসা পরামর্শ পান।', start: 'ফসল পরীক্ষা শুরু করুন', updating: 'আবহাওয়া হালনাগাদ হচ্ছে…', chooseDistrict: 'আবহাওয়া দেখতে একটি জেলা বেছে নিন।', conditions: (name) => `বর্তমান পরিস্থিতি · ${name}`, weatherUpdate: 'আবহাওয়ার তথ্য', celsius: 'সেলসিয়াস', humidity: 'আর্দ্রতা', rain: 'বৃষ্টি', wind: 'বাতাস', next: 'পরের ৩ দিন', low: 'সর্বনিম্ন', weatherSource: 'জেলা আবহাওয়া পরিষেবা। স্প্রে বা যাত্রার আগে স্থানীয় সতর্কতা দেখুন।', marketTitle: (name) => `${name}-এর বাজারদর`, marketCopy: 'দাম ₹ প্রতি কুইন্টাল। বিক্রির আগে বাজারে নিশ্চিত করুন।', crop: 'ফসল', marketLoading: 'বাজারদর লোড হচ্ছে…', trend: '৭ দিনের দামের প্রবণতা', trendCopy: (crop) => `${crop}-এর স্থানীয় আনুমানিক প্রবণতা`, estimate: 'বাজারের আনুমানিক তথ্য', marketName: 'বাজার', variety: 'জাত', range: 'দামসীমা', modal: 'মূল দাম', date: 'তারিখ', today: 'আজ', priceNote: 'জাত, মান ও আগমনের পরিমাণ অনুযায়ী দাম বদলাতে পারে।', near: (name) => `${name}-এর কাছে সরঞ্জাম খুঁজুন`, shopsTitle: 'ম্যাপে কাছের কৃষি দোকান দেখুন', shopsCopy: 'আপনার প্রয়োজন বেছে নিন। নির্বাচিত জেলার বর্তমান দোকান, দিকনির্দেশ ও যোগাযোগের তথ্য দেখতে ম্যাপ খুলবে।', shopNames: ['বীজ ও সার', 'কৃষি যন্ত্রপাতি', 'পশুখাদ্য ও পশুচিকিৎসা'], shopDetails: ['বীজ, পুষ্টি ও ফসল সুরক্ষা সামগ্রী', 'যন্ত্র, পাম্প, স্প্রেয়ার ও মেরামত', 'পশুখাদ্য ও গবাদি পশুর সামগ্রী'], find: 'কাছে খুঁজুন ↗', shopsNote: 'দোকানের ফলাফল ও খোলার সময় ম্যাপ পরিষেবা দেয়। যাওয়ার আগে স্টক নিশ্চিত করতে ফোন করুন।' },
+  hi: { tabs: ['मौसम', 'बाज़ार भाव', 'नज़दीकी दुकानें'], tag: 'पश्चिम बंगाल किसान सहायता', title: 'हर दिन सही जानकारी के साथ खेती करें।', intro: 'खेत जाने से पहले स्थानीय मौसम, मंडी भाव और पास की कृषि-सामग्री की जानकारी एक ही जगह देखें।', diagnose: 'मेरी फसल जाँचें →', explore: 'स्थानीय जानकारी देखें', weatherDetail: 'खेत के लिए तैयार', priceDetail: '7 दिन का रुझान', shopDetail: 'आपके क्षेत्र के पास', dashboard: 'किसान डैशबोर्ड', local: 'स्थानीय जानकारी, आसानी से', select: 'एक बार जिला चुनें, फिर ज़रूरी जानकारी के लिए टैब बदलें।', area: 'आपका क्षेत्र', useLocation: 'मेरा स्थान इस्तेमाल करें', districtFail: 'जिलों की सूची लोड नहीं हो सकी। फिर कोशिश करें।', locating: 'निकटतम पश्चिम बंगाल जिला खोजा जा रहा है…', nearest: (name) => `${name} को आपके निकटतम जिले के रूप में चुना गया है।`, locationUnsupported: 'इस ब्राउज़र में स्थान सुविधा उपलब्ध नहीं है। कृपया जिला चुनें।', locationFail: 'आपका स्थान नहीं मिल सका। कृपया जिला चुनें।', weatherFail: 'अभी मौसम की जानकारी उपलब्ध नहीं है। कृपया बाद में कोशिश करें।', marketFail: 'अभी बाज़ार भाव उपलब्ध नहीं है। कृपया बाद में कोशिश करें।', help: 'फसल की समस्या में मदद चाहिए?', helpCopy: 'पत्ते की साफ़ तस्वीर अपलोड करें और आसान उपचार सलाह पाएँ।', start: 'फसल जाँच शुरू करें', updating: 'मौसम अपडेट हो रहा है…', chooseDistrict: 'मौसम देखने के लिए जिला चुनें।', conditions: (name) => `वर्तमान स्थिति · ${name}`, weatherUpdate: 'मौसम जानकारी', celsius: 'सेल्सियस', humidity: 'नमी', rain: 'बारिश', wind: 'हवा', next: 'अगले 3 दिन', low: 'न्यूनतम', weatherSource: 'जिला मौसम सेवा। छिड़काव या यात्रा से पहले स्थानीय चेतावनी देखें।', marketTitle: (name) => `${name} में मंडी भाव`, marketCopy: 'कीमत ₹ प्रति क्विंटल है। बेचने से पहले मंडी में पुष्टि करें।', crop: 'फसल', marketLoading: 'बाज़ार भाव लोड हो रहे हैं…', trend: '7 दिन का मूल्य रुझान', trendCopy: (crop) => `${crop} का स्थानीय अनुमानित रुझान`, estimate: 'बाज़ार का अनुमान', marketName: 'मंडी', variety: 'किस्म', range: 'दायरा', modal: 'मुख्य मूल्य', date: 'तारीख', today: 'आज', priceNote: 'किस्म, गुणवत्ता और आवक के अनुसार कीमत बदल सकती है।', near: (name) => `${name} के पास सामान खोजें`, shopsTitle: 'मैप पर पास की कृषि दुकानें खोलें', shopsCopy: 'अपनी ज़रूरत चुनें। चुने हुए जिले की मौजूदा दुकानें, दिशा और संपर्क विवरण देखने के लिए मैप खुलेगा।', shopNames: ['बीज और उर्वरक', 'कृषि उपकरण', 'पशु आहार और चिकित्सा'], shopDetails: ['बीज, पोषण और फसल सुरक्षा सामग्री', 'औज़ार, पंप, स्प्रेयर और मरम्मत', 'पशु आहार और पशुपालन सामग्री'], find: 'पास में खोजें ↗', shopsNote: 'दुकान के परिणाम और समय मैप सेवा देती है। जाने से पहले उपलब्धता के लिए फोन करें।' },
+};
+const tabs = [['weather', '☀'], ['market', '₹'], ['shops', '⌖']];
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const dateLabel = (date) => new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(date));
+const localCondition = (condition, text) => text.weatherConditions?.[condition] || condition || text.weatherUpdate;
+const getWeatherArt = (condition = '') => {
+  const normalized = String(condition).toLowerCase();
+  if (normalized.includes('rain') || normalized.includes('storm') || normalized.includes('drizzle') || normalized.includes('showers') || normalized.includes('thunder')) return { emoji: '🌧️', tint: 'from-sky-500/25 via-cyan-600/20 to-slate-900/95', label: 'Rainy', accent: 'bg-sky-500/10 text-sky-100' };
+  if (normalized.includes('cloud') || normalized.includes('fog') || normalized.includes('mist') || normalized.includes('overcast')) return { emoji: '☁️', tint: 'from-slate-400/20 via-sky-500/10 to-slate-900/95', label: 'Cloudy', accent: 'bg-slate-400/10 text-slate-100' };
+  if (normalized.includes('sun') || normalized.includes('clear') || normalized.includes('bright')) return { emoji: '☀️', tint: 'from-amber-400/25 via-orange-500/20 to-slate-900/95', label: 'Sunny', accent: 'bg-amber-400/10 text-amber-100' };
+  return { emoji: '🌤️', tint: 'from-emerald-500/20 via-cyan-500/15 to-slate-900/95', label: 'Clear', accent: 'bg-emerald-500/10 text-emerald-100' };
+};
+const timeGreeting = (hour) => hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 17 ? 'Good afternoon' : hour >= 17 && hour < 21 ? 'Good evening' : 'Good night';
+
+function weekFrom(records) {
+  const base = number(records?.[0]?.modalPrice) || 2100;
+  return [-.055, -.025, .018, -.012, .042, .02, 0].map((change, index) => {
+    const date = new Date(); date.setDate(date.getDate() - 6 + index);
+    return { date, price: Math.round(base * (1 + change) / 10) * 10 };
+  });
+}
+
+const reminderCopy = {
+  en: {
+    badge: 'FOLLOW-UP REMINDER',
+    dueIn: (days) => days === 0 ? 'Due today!' : days === 1 ? 'Due tomorrow' : days < 0 ? `${Math.abs(days)} day(s) overdue` : `Due in ${days} days`,
+    markDone: 'Mark Completed',
+    completing: 'Updating...',
+    inspect: 'Inspect Field →',
+    viewAll: (count) => `+${count - 1} more scheduled check-in(s)`,
+  },
+  bn: {
+    badge: 'পরবর্তী পর্যবেক্ষণ অনুস্মারক',
+    dueIn: (days) => days === 0 ? 'আজই করণীয়!' : days === 1 ? 'আগামীকাল করণীয়' : days < 0 ? `${Math.abs(days)} দিন অতিবাহিত` : `${days} দিনের মধ্যে করণীয়`,
+    markDone: 'সম্পন্ন হয়েছে',
+    completing: 'হালনাগাদ হচ্ছে...',
+    inspect: 'ফসল পরীক্ষা →',
+    viewAll: (count) => `আরও +${count - 1}টি অনুস্মারক রয়েছে`,
+  },
+  hi: {
+    badge: 'फॉलो-अप रिमाइंडर',
+    dueIn: (days) => days === 0 ? 'आज ही करना है!' : days === 1 ? 'कल देय है' : days < 0 ? `${Math.abs(days)} दिन विलंबित` : `${days} दिनों में देय`,
+    markDone: 'पूर्ण चिह्नित करें',
+    completing: 'अपडेट हो रहा है...',
+    inspect: 'खेत निरीक्षण →',
+    viewAll: (count) => `+${count - 1} और निर्धारित निरीक्षण`,
+  },
+};
+
+function getDaysUntil(dateStr) {
+  if (!dateStr) return 0;
+  const target = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffTime = target - now;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const { language } = useLanguage();
+  const text = dashboardText[language] || dashboardText.en;
+  const [tab, setTab] = useState('weather');
+  const [districts, setDistricts] = useState([]);
+  const [district, setDistrict] = useState('');
+  const [crop, setCrop] = useState('Rice');
+  const [weather, setWeather] = useState(null);
+  const [market, setMarket] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [followUps, setFollowUps] = useState([]);
+  const [completingTaskId, setCompletingTaskId] = useState(null);
+  const selected = districts.find((item) => item.name === district);
+  const week = useMemo(() => weekFrom(market?.records), [market]);
+
+  useEffect(() => {
+    getFollowUps({ status: 'PENDING' })
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setFollowUps(list);
+      })
+      .catch((err) => {
+        console.warn('Could not load follow-up tasks', err);
+      });
+  }, []);
+
+  const handleCompleteTask = async (taskId) => {
+    setCompletingTaskId(taskId);
+    try {
+      await completeFollowUp(taskId);
+      setFollowUps((prev) => prev.filter((t) => t.id !== taskId));
+    } catch (err) {
+      console.warn('Could not complete follow-up task', err);
+    } finally {
+      setCompletingTaskId(null);
+    }
+  };
+
+  useEffect(() => {
+    getDistricts().then(({ data }) => {
+      const availableDistricts = data || [];
+      setDistricts(availableDistricts);
+      setWeather(null);
+      let profileDistrict = '';
+      try { profileDistrict = JSON.parse(localStorage.getItem('fasal-sathi-farmer-profile') || '{}').district || ''; } catch { /* use location instead */ }
+      const defaultDistrict = availableDistricts.some((item) => item.name === profileDistrict)
+        ? profileDistrict
+        : (availableDistricts[0]?.name || 'Nadia');
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(({ coords }) => {
+          const closest = availableDistricts.reduce((best, item) => {
+            const distance = Math.hypot(item.latitude - coords.latitude, item.longitude - coords.longitude);
+            return !best || distance < best.distance ? { item, distance } : best;
+          }, null);
+          setDistrict(closest?.item?.name || defaultDistrict);
+        }, () => setDistrict(defaultDistrict), { maximumAge: 300000, timeout: 5000 });
+      } else {
+        setDistrict(defaultDistrict);
+      }
+    })
+      .catch(() => setNotice(text.districtFail));
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!selected || tab !== 'weather') {
+      if (!district && tab === 'weather' && districts.length > 0) {
+        setDistrict(districts[0].name);
+      }
+      return;
+    }
+    setLoading(true);
+    getWeather(selected.latitude, selected.longitude).then(({ data }) => setWeather(data))
+      .catch(() => setNotice(text.weatherFail))
+      .finally(() => setLoading(false));
+  }, [selected, tab, district, districts]);
+
+  useEffect(() => {
+    if (!district || tab !== 'market') return;
+    setLoading(true);
+    getMandiPrices(crop, 'West Bengal', district).then(({ data }) => setMarket(data))
+      .catch(() => setNotice(text.marketFail))
+      .finally(() => setLoading(false));
+  }, [crop, district, tab]);
+
+  const useLocation = () => {
+    if (!navigator.geolocation) return setNotice(text.locationUnsupported);
+    setLoading(true); setNotice(text.locating);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const closest = districts.reduce((best, item) => {
+          const distance = Math.hypot(item.latitude - coords.latitude, item.longitude - coords.longitude);
+          return !best || distance < best.distance ? { item, distance } : best;
+        }, null);
+        const districtName = closest?.item?.name || districts[0]?.name || 'Nadia';
+        setDistrict(districtName);
+
+        getWeather(coords.latitude, coords.longitude)
+          .then(({ data }) => {
+            setWeather(data);
+            setNotice(text.nearest(districtName));
+          })
+          .catch(() => setNotice(text.weatherFail))
+          .finally(() => setLoading(false));
+      },
+      (err) => {
+        console.warn('Location access error:', err);
+        setNotice(text.locationFail);
+        if (!district && districts.length > 0) {
+          setDistrict(districts[0].name);
+        }
+        setLoading(false);
+      },
+      { timeout: 8000, maximumAge: 300000 }
+    );
+  };
+
+  return <div className="min-h-screen bg-[#07120e] text-slate-100">
+    <MorningBrief district={district} crop={crop} weather={weather} market={market} currentTime={currentTime} language={language} />
+    {followUps.length > 0 && (() => {
+      const task = followUps[0];
+      const daysUntil = getDaysUntil(task.dueDate);
+      const rText = reminderCopy[language] || reminderCopy.en;
+      const isUrgent = daysUntil <= 1;
+
+      return (
+        <div className="mx-auto max-w-7xl px-4 pt-4 sm:pt-6">
+          <div className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+            isUrgent
+              ? 'border-amber-400/40 bg-gradient-to-r from-amber-950/80 via-yellow-950/60 to-[#1b1506]'
+              : 'border-emerald-500/30 bg-gradient-to-r from-[#0a261e]/90 via-[#0d2d23]/80 to-[#071d17]/90'
+          }`}>
+            <div className="flex items-start gap-3.5">
+              <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl shadow-inner ${
+                isUrgent ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30 animate-pulse' : 'bg-lime-400/15 text-lime-300 border border-lime-400/30'
+              }`}>
+                🔔
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                    isUrgent ? 'bg-amber-400 text-slate-950' : 'bg-lime-300 text-emerald-950'
+                  }`}>
+                    {rText.badge}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-emerald-200/90">
+                    📅 {task.dueDate} · {rText.dueIn(daysUntil)}
+                  </span>
+                  {task.farmId && (
+                    <span className="text-xs text-emerald-300/70">
+                      (Farm #{task.farmId})
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm font-bold text-white sm:text-base leading-snug">
+                  {task.taskTitle || '7-Day Follow-Up: Check crop recovery after treatment application.'}
+                </p>
+                {followUps.length > 1 && (
+                  <p className="mt-1 text-xs text-emerald-300/70">
+                    {rText.viewAll(followUps.length)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-end md:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => handleCompleteTask(task.id)}
+                disabled={completingTaskId === task.id}
+                className="rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md hover:bg-emerald-400 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {completingTaskId === task.id ? rText.completing : `✓ ${rText.markDone}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/diagnose')}
+                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/15 transition-all"
+              >
+                {rText.inspect}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+    <section className="relative overflow-hidden bg-[#0a1d18] px-4 py-12 text-white sm:py-16">
+      <div className="absolute inset-0 opacity-90" style={{ backgroundImage: 'linear-gradient(120deg, rgba(5, 23, 18, 0.88), rgba(10, 49, 39, 0.74)), url("/farm-hero.svg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(149,227,145,0.18),transparent_40%)]" />
+      <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-lime-300/20 blur-3xl animate-[drift_18s_ease-in-out_infinite_alternate]" />
+      <div className="absolute -left-16 bottom-0 h-64 w-64 rounded-full bg-emerald-300/15 blur-3xl animate-[drift_12s_ease-in-out_infinite_alternate]" />
+      <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div className="max-w-2xl">
+          <span className="inline-block rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-50 backdrop-blur-sm">
+            {text.tag}
+          </span>
+          <h1 className="mt-6 text-4xl font-black leading-tight tracking-[-0.04em] sm:text-5xl">
+            {text.title}
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-emerald-50/90 sm:text-lg">
+            {text.intro}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <button 
+              onClick={() => navigate('/diagnose')} 
+              className="rounded-xl bg-lime-300 px-6 py-3 text-sm font-bold text-emerald-950 shadow-[0_14px_24px_rgba(196,233,98,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-lime-200"
+            >
+              {text.diagnose}
+            </button>
+            <a 
+              href="/tools"
+              className="rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/15"
+            >
+              {text.explore}
+            </a>
+          </div>
+        </div>
+        <div className="rounded-[1.6rem] border border-white/15 bg-white/8 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.22)] backdrop-blur-md">
+          <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-[#dfeecb] shadow-[0_18px_32px_rgba(15,44,32,0.22)]">
+            <div className="h-52 w-full bg-cover bg-center transition-transform duration-700 hover:scale-[1.03]" style={{ backgroundImage: 'url("/farm-card.svg")' }} />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <HeroStat icon="☀" title={text.tabs[0]} detail={text.weatherDetail} />
+            <HeroStat icon="₹" title={text.tabs[1]} detail={text.priceDetail} />
+            <HeroStat icon="⌖" title={text.tabs[2]} detail={text.shopDetail} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="farm-tools" className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-400">
+            {text.dashboard}
+          </p>
+          <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] text-slate-100 sm:text-4xl">
+            {text.local}
+          </h2>
+        </div>
+        <p className="max-w-md text-sm leading-6 text-slate-300">
+          {text.select}
+        </p>
+      </div>
+
+      <div className="rounded-[1.5rem] border border-slate-700 bg-[linear-gradient(180deg,rgba(10,17,14,0.96),rgba(9,16,13,0.98))] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.22)] sm:p-6">
+        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-200">
+              {text.area}
+            </label>
+            <select 
+              value={district} 
+              onChange={(event) => setDistrict(event.target.value)} 
+              className="w-full rounded-xl border-2 border-slate-600 bg-slate-900 px-4 py-3 text-base font-medium text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20"
+            >
+              <option value="">{text.chooseDistrict}</option>
+              {districts.map((item) => (
+                <option key={item.name} value={item.name}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button 
+            onClick={useLocation} 
+            className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-100 transition-all hover:bg-emerald-500/15 hover:shadow-sm"
+          >
+            ⌖ {text.useLocation}
+          </button>
+        </div>
+
+        <div className="mt-8 border-b border-slate-700" role="tablist">
+          <div className="flex gap-1 overflow-x-auto">
+            {tabs.map(([id, icon], index) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => {
+                  setTab(id);
+                  setNotice('');
+                }}
+                className={`whitespace-nowrap border-b-2 px-5 py-4 text-sm font-bold transition-all ${
+                  tab === id
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-200'
+                    : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                <span className="mr-2 text-lg">{icon}</span>
+                {text.tabs[index]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {notice && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-100">
+            {notice}
+          </div>
+        )}
+
+        <div className="mt-8">
+          {tab === 'weather' && <Weather weather={weather} district={district} loading={loading} text={text} />}
+          {tab === 'market' && <Market crop={crop} setCrop={setCrop} market={market} week={week} district={district} loading={loading} text={text} />}
+          {tab === 'shops' && <Shops district={district} text={text} />}
+        </div>
+      </div>
+    </section>
+
+    <section className="border-y border-emerald-700/30 bg-[radial-gradient(circle_at_top,_rgba(110,164,78,0.15),transparent_40%),#0b1714] px-4 py-12">
+      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 sm:flex-row">
+        <div>
+          <p className="text-lg font-black text-emerald-100">
+            {text.help}
+          </p>
+          <p className="mt-2 text-sm text-emerald-200/85">
+            {text.helpCopy}
+          </p>
+        </div>
+        <button 
+          onClick={() => navigate('/diagnose')} 
+          className="whitespace-nowrap rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-slate-950 shadow-[0_12px_22px_rgba(52,211,153,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-400"
+        >
+          {text.start}
+        </button>
+      </div>
+    </section>
+  </div>;
+}
+
+function MorningBrief({ district, crop, weather, market, currentTime, language }) {
+  const copy = featureText[language] || featureText.en;
+  const price = Number(market?.records?.[0]?.modalPrice) || typicalPrices[crop] || 2400;
+  const greeting = timeGreeting(currentTime.getHours()).replace('Good morning', copy.morning).replace('Good afternoon', copy.afternoon).replace('Good evening', copy.evening).replace('Good night', copy.night);
+  const weatherAdvice = weather?.rainMm > 5 ? copy.rainTask : weather ? copy.weatherTask : copy.chooseTask;
+  return <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8" aria-labelledby="morning-brief-title"><div className="rounded-[1.6rem] border border-emerald-700/20 bg-[linear-gradient(135deg,rgba(14,35,29,0.92),rgba(10,25,20,0.88))] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.28)] sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{copy.today}</p><h2 id="morning-brief-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">{greeting}, farmer</h2><p className="mt-2 text-sm text-slate-300">{district ? `📍 ${copy.choose.split(' ')[0]} — ${district}` : `📍 ${copy.choose}`}</p><div className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-3"><p className="rounded-xl border border-emerald-500/20 bg-emerald-950/35 p-3 shadow-inner shadow-emerald-500/10">🌦️ <strong>{copy.weather}:</strong> {weatherAdvice}</p><p className="rounded-xl border border-lime-500/20 bg-lime-950/30 p-3 shadow-inner shadow-lime-500/10">💰 <strong>{crop} {copy.price}:</strong> ₹{price.toLocaleString('en-IN')}/quintal {copy.nearby}.</p><p className="rounded-xl border border-amber-500/20 bg-amber-950/25 p-3 shadow-inner shadow-amber-500/10">🐛 <strong>{copy.pest}:</strong> {copy.pestText}</p></div></div></section>;
+}
+
+export function FarmerPlanner({ district, crop, weather, market, farmCrops, onSave, onRemove }) {
+  const [form, setForm] = useState({ crop: crop || 'Tomato', acres: '2', planted: '', harvest: '', storage: 'Ventilated room', notes: '' });
+  const price = Number(market?.records?.[0]?.modalPrice) || typicalPrices[crop] || 2400;
+  const weatherAdvice = weather?.rainMm > 5 ? "Rain is expected. Avoid irrigation and keep harvested produce covered." : weather ? "Check soil moisture before irrigating; avoid watering if the soil is still damp." : "Choose your district above to get a weather-based task reminder.";
+  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (!form.crop || !Number(form.acres)) return;
+    onSave({ ...form, acres: Number(form.acres) });
+    setForm((current) => ({ ...current, notes: '' }));
+  };
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-14 sm:pb-16" aria-labelledby="farmer-planner-title">
+      <div className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]">
+        <div className="rounded-2xl border border-emerald-900/60 bg-emerald-950/40 p-6 shadow-md sm:p-8">
+          <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Today on your farm</p>
+          <h2 id="farmer-planner-title" className="mt-2 text-2xl font-bold text-slate-100">Good morning, farmer</h2>
+          <p className="mt-3 text-sm text-slate-300">{district ? `📍 Your farm — ${district}` : '📍 Choose your district for local updates'}</p>
+          <div className="mt-6 space-y-4 text-sm text-slate-200">
+            <p><span className="mr-2">🌦️</span><strong>Weather task:</strong> {weatherAdvice}</p>
+            <p><span className="mr-2">💰</span><strong>{crop} prices:</strong> ₹{price.toLocaleString('en-IN')}/quintal nearby. Confirm at the market before selling.</p>
+            <p><span className="mr-2">🐛</span><strong>Pest check:</strong> Inspect the underside of leaves and isolate any infected plants.</p>
+            <div>
+              <strong>📅 Today&apos;s tasks</strong>
+              <ul className="mt-2 list-disc space-y-1 pl-6 text-slate-300">
+                <li>Check leaves and soil moisture</li>
+                <li>Remove and safely dispose of infected plants</li>
+                <li>Review storage space before harvest</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-6 shadow-md sm:p-8">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Keep your farm record</p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-100">My Crops &amp; Storage</h2>
+            </div>
+            <p className="text-xs text-slate-400">Saved on this device</p>
+          </div>
+          <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
+            <PlannerSelect label="Crop" value={form.crop} options={crops} onChange={(value) => update('crop', value)} />
+            <PlannerInput label="Land (acres)" type="number" min="0.1" step="0.1" value={form.acres} onChange={(value) => update('acres', value)} />
+            <PlannerInput label="Planting date" type="date" value={form.planted} onChange={(value) => update('planted', value)} />
+            <PlannerInput label="Expected harvest date" type="date" value={form.harvest} onChange={(value) => update('harvest', value)} />
+            <PlannerSelect label="Storage method" value={form.storage} options={['Ventilated room', 'Cold storage', 'Warehouse', 'Jute sacks', 'Sell immediately']} onChange={(value) => update('storage', value)} />
+            <PlannerInput label="Notes" value={form.notes} placeholder="Seed variety, batch, or problem" onChange={(value) => update('notes', value)} />
+            <button type="submit" className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500 sm:col-span-2">+ Save crop record</button>
+          </form>
+          <div className="mt-6 space-y-3">
+            {farmCrops.length === 0 ? <p className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-400">Add the crops you are growing to remember harvest and storage plans.</p> : farmCrops.map((record) => (
+              <div key={record.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-700 bg-slate-950/70 p-4 sm:flex-row sm:items-center">
+                <div><p className="font-bold text-slate-100">{record.crop} · {record.acres} acres</p><p className="mt-1 text-xs text-slate-400">Store in: {record.storage}{record.harvest ? ` · Harvest: ${record.harvest}` : ''}</p>{record.notes && <p className="mt-1 text-xs text-slate-300">{record.notes}</p>}</div>
+                <button type="button" onClick={() => onRemove(record.id)} className="self-start rounded-md border border-red-800 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-950 sm:self-auto">Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlannerInput({ label, value, onChange, type = 'text', ...props }) {
+  const id = `planner-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  return <label htmlFor={id} className="block text-sm font-semibold text-slate-200">{label}<input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-3 text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30" {...props} /></label>;
+}
+
+function PlannerSelect({ label, value, options, onChange }) {
+  const id = `planner-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  return <label htmlFor={id} className="block text-sm font-semibold text-slate-200">{label}<select id={id} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-3 text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30">{options.map((option) => <option key={option}>{option}</option>)}</select></label>;
+}
+
+export function ProfitCalculator({ inputs, onChange, market, language }) {
+  const copy = featureText[language] || featureText.en;
+  const numberValue = (value) => Math.max(0, Number(value) || 0);
+  const marketPrice = numberValue(market?.records?.[0]?.modalPrice);
+  const price = numberValue(inputs.price) || marketPrice || typicalPrices[inputs.crop] || 2100;
+  const production = numberValue(inputs.production);
+  const totalCost = numberValue(inputs.seed) + numberValue(inputs.fertilizer) + numberValue(inputs.labour);
+  const revenue = production * price;
+  const profit = revenue - totalCost;
+  const breakEven = production > 0 ? totalCost / production : 0;
+  const money = (value) => `₹${Math.round(value).toLocaleString('en-IN')}`;
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-14 sm:pb-16" aria-labelledby="profit-calculator-title">
+      <div className="rounded-2xl border border-emerald-900/60 bg-emerald-950/40 p-6 shadow-md sm:p-8">
+        <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">{copy.today}</p>
+            <h2 id="profit-calculator-title" className="mt-2 text-2xl font-bold text-slate-100 sm:text-3xl">{copy.calculator}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{copy.calculatorCopy}</p>
+          </div>
+          <p className="text-xs text-slate-400">Price used: {money(price)} per quintal</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ProfitInput label={copy.land} value={inputs.land} onChange={(value) => onChange('land', value)} />
+          <label className="block text-sm font-semibold text-slate-200">{copy.crop}
+            <select value={inputs.crop} onChange={(event) => onChange('crop', event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-800 bg-slate-900 px-3 py-3 text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30">
+              {crops.map((cropName) => <option key={cropName}>{cropName}</option>)}
+            </select>
+          </label>
+          <ProfitInput label={copy.seed} value={inputs.seed} onChange={(value) => onChange('seed', value)} />
+          <ProfitInput label={copy.fertilizer} value={inputs.fertilizer} onChange={(value) => onChange('fertilizer', value)} />
+          <ProfitInput label={copy.labour} value={inputs.labour} onChange={(value) => onChange('labour', value)} />
+          <ProfitInput label={copy.production} value={inputs.production} onChange={(value) => onChange('production', value)} />
+          <ProfitInput label={copy.selling} value={inputs.price} onChange={(value) => onChange('price', value)} />
+        </div>
+
+        <div className="mt-8 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <ProfitResult label={copy.revenue} value={money(revenue)} tone="text-sky-300" />
+          <ProfitResult label={copy.cost} value={money(totalCost)} tone="text-amber-300" />
+          <ProfitResult label={profit >= 0 ? copy.profit : copy.loss} value={money(Math.abs(profit))} tone={profit >= 0 ? 'text-emerald-300' : 'text-red-300'} />
+          <ProfitResult label={copy.breakEven} value={`${money(breakEven)}/q`} tone="text-violet-300" />
+        </div>
+        <p className="mt-5 text-xs leading-5 text-slate-400">{copy.estimateNote} Actual prices, yield, transport, water, land rent, packaging, and crop losses can change the final result.</p>
+      </div>
+    </section>
+  );
+}
+
+function ProfitInput({ label, value, onChange }) {
+  return <label className="block text-sm font-semibold text-slate-200">{label}<input type="number" min="0" step="any" value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-800 bg-slate-900 px-3 py-3 text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30" /></label>;
+}
+
+function ProfitResult({ label, value, tone }) {
+  return <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-900/80 p-4"><p className="break-words text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-2 break-words text-xl font-bold sm:text-2xl ${tone}`}>{value}</p></div>;
+}
+
+function HeroStat({ icon, title, detail }) { return <div className="rounded-xl border border-slate-700/80 bg-slate-900/80 p-3 text-center shadow-[0_10px_20px_rgba(0,0,0,0.12)]"><div className="text-2xl">{icon}</div><strong className="mt-2 block text-sm text-slate-100">{title}</strong><span className="text-xs text-emerald-100">{detail}</span></div>; }
+function Metric({ label, value }) { return <div className="rounded-xl border border-slate-700 bg-[#0e1815]/90 p-3 text-center shadow-sm"><span className="block text-lg font-bold text-white">{value}</span><span className="text-xs font-medium text-slate-300">{label}</span></div>; }
+
+function Weather({ weather, district, loading, text }) {
+  if (!weather) return <div className="py-10 text-center text-sm text-slate-300">{loading ? text.updating : text.chooseDistrict}</div>;
+  const weatherArt = getWeatherArt(weather.condition);
+  return <div className="mt-6"><div className={`rounded-[1.6rem] border border-slate-700/80 bg-gradient-to-br ${weatherArt.tint} p-5 shadow-[0_18px_40px_rgba(0,0,0,0.22)] sm:p-7`}><div className="flex flex-col justify-between gap-4 sm:flex-row"><div><p className="text-sm font-semibold text-emerald-200">{text.conditions(district)}</p><h3 className="mt-1 text-3xl font-bold text-white">{localCondition(weather.condition, text)}</h3><p className="mt-2 max-w-xl text-sm leading-6 text-slate-200">{text.weatherUpdate}</p></div><div className={`flex items-center gap-3 rounded-2xl border border-white/15 ${weatherArt.accent} px-5 py-3 text-center shadow-sm`}><span className="text-4xl" aria-label={weatherArt.label}>{weatherArt.emoji}</span><div><span className="block text-4xl font-bold text-white">{weather.temperatureC}°</span><span className="text-xs font-semibold text-slate-300">{text.celsius}</span></div></div></div><div className="mt-6 grid grid-cols-3 gap-3"><Metric label={text.humidity} value={`${weather.humidityPercent}%`} /><Metric label={text.rain} value={`${weather.rainMm} mm`} /><Metric label={text.wind} value={`${weather.windKph} km/h`} /></div></div><div className="mt-5"><h4 className="font-bold text-slate-100">{text.next}</h4><div className="mt-3 grid gap-3 sm:grid-cols-3">{(weather.forecast || []).map((day) => <div key={day.date} className="rounded-xl border border-slate-700 bg-[#0c1513]/90 p-4"><p className="text-sm font-bold text-slate-100">{dateLabel(day.date)}</p><p className="mt-3 text-2xl font-bold text-emerald-300">{day.highC}°</p><p className="text-xs text-slate-300">{text.low} {day.lowC}° · {text.rain} {day.rainMm} mm</p></div>)}</div></div><p className="mt-4 text-xs text-slate-400">{text.weatherSource}</p></div>;
+}
+
+function Market({ crop, setCrop, market, week, district, loading, text }) {
+  const max = Math.max(...week.map((item) => item.price), 1);
+  if (!district) return <div className="py-10 text-center text-sm text-slate-500">{text.chooseDistrict}</div>;
+  return <div className="mt-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h3 className="text-xl font-bold text-slate-900">{text.marketTitle(district)}</h3><p className="mt-1 text-sm text-slate-500">{text.marketCopy}</p></div><label className="text-sm font-semibold text-slate-700">{text.crop}<select value={crop} onChange={(event) => setCrop(event.target.value)} className="ml-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-emerald-600">{crops.map((name) => <option key={name}>{name}</option>)}</select></label></div>{!market && loading ? <div className="py-10 text-sm text-slate-500">{text.marketLoading}</div> : <><div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5"><div className="flex items-center justify-between"><div><p className="font-bold text-slate-900">{text.trend}</p><p className="text-xs text-slate-500">{text.trendCopy(crop)}</p></div><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{text.estimate}</span></div><div className="mt-5 flex h-32 items-end gap-2 sm:gap-4">{week.map((item) => <div key={item.date.toISOString()} className="flex flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] font-semibold text-slate-600">₹{item.price.toLocaleString('en-IN')}</span><div className="w-full max-w-10 rounded-t-md bg-emerald-600" style={{ height: `${Math.max(18, item.price / max * 92)}px` }} /><span className="text-[10px] text-slate-500">{dateLabel(item.date).split(' ')[0]}</span></div>)}</div></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-3">{text.marketName}</th><th className="px-3 py-3">{text.variety}</th><th className="px-3 py-3">{text.range}</th><th className="px-3 py-3">{text.modal}</th><th className="px-3 py-3">{text.date}</th></tr></thead><tbody>{(market?.records || []).map((record, index) => <tr key={`${record.market}-${index}`} className="border-b border-slate-100"><td className="px-3 py-3 font-semibold text-slate-800">{record.market}</td><td className="px-3 py-3 text-slate-600">{record.variety || text.variety}</td><td className="px-3 py-3 text-slate-600">₹{number(record.minPrice).toLocaleString('en-IN')}–₹{number(record.maxPrice).toLocaleString('en-IN')}</td><td className="px-3 py-3 font-bold text-emerald-800">₹{number(record.modalPrice).toLocaleString('en-IN')}</td><td className="px-3 py-3 text-slate-600">{record.date || text.today}</td></tr>)}</tbody></table></div><p className="mt-4 text-xs text-slate-500">{text.priceNote}</p></>}</div>;
+}
+
+function Shops({ district, text }) {
+  const mapUrl = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  const queries = ['agricultural seed fertilizer shops', 'farm equipment shops', 'animal feed veterinary shops'];
+  return <div className="mt-6"><div className="rounded-2xl border border-amber-500/20 bg-[linear-gradient(180deg,rgba(38,28,11,0.92),rgba(19,16,10,0.96))] p-5 sm:p-7"><p className="text-sm font-bold uppercase tracking-wider text-amber-200">{text.near(district)}</p><h3 className="mt-2 text-2xl font-bold text-slate-100">{text.shopsTitle}</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{text.shopsCopy}</p></div><div className="mt-5 grid gap-4 md:grid-cols-3">{queries.map((query, index) => <div key={query} className="rounded-xl border border-slate-700 bg-slate-900/75 p-5 shadow-sm"><div className="text-2xl">⌖</div><h4 className="mt-3 font-bold text-slate-100">{text.shopNames[index]}</h4><p className="mt-1 min-h-10 text-sm leading-5 text-slate-300">{text.shopDetails[index]}</p><a className="mt-5 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-400" href={mapUrl(`${query} in ${district}, West Bengal`)} target="_blank" rel="noreferrer">{text.find}</a></div>)}</div><p className="mt-5 text-xs text-slate-400">{text.shopsNote}</p></div>;
+}

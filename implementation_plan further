@@ -1,0 +1,58 @@
+# Implementation Plan - Comprehensive Website Feature Fixes & Optimizations
+
+This document outlines the proposed technical improvements, feature fixes, and optimizations across the Fasal Sathi Agriculture & FoodTech application.
+
+## Overview & Goal
+The objective is to audit, optimize, and enhance all core capabilities of the Fasal Sathi application (frontend React UI and Spring Boot backend), resolving potential runtime bottlenecks, improving UI/UX design and responsiveness, ensuring robust offline/low-connectivity resilience, and expanding agronomic advice precision.
+
+---
+
+## Proposed Improvements & Optimizations
+
+### 1. Diagnosis & AI/ML Leaf Inspection Engine
+- **Image Quality & Leaf Validation Gating**: Add pre-check validation for image sharpness, non-leaf image filtering, and retake suggestions before submitting to backend ML model (`infer_crop_model.py` / PyTorch).
+- **Advisory Precision & Closed-Loop Feedback**: Enhance disease diagnostic details with clear chemical vs. organic treatment protocols, dosage safety warnings, and direct KVK (Krishi Vigyan Kendra) fallback contacts.
+- **Offline Diagnosis Sync**: Ensure queued offline diagnostic requests sync automatically when internet connection is re-established.
+
+### 2. Weather Advisory & Disease Risk Forecasting
+- **Live Weather Integration**: Refine Open-Meteo live weather data fetching with fallback caching for offline field operations.
+- **Disease Risk Calculations**: Calculate micro-climate disease risk scores (e.g. Late Blight, Powdery Mildew, Rust) based on temperature, relative humidity, and rainfall trends.
+- **Dynamic Task Suggestions**: Display actionable farm tasks (irrigation, spraying warnings) based on live weather on the Home Dashboard.
+
+### 3. Farm & Field Management, Pest Log & Sensor Ingestion
+- **Multi-Farm & Multi-Field Structuring**: Link diagnosis history, field notes, and monitoring plans directly to specific farms and fields per user profile.
+- **Follow-up Monitoring Lifecycle**: Streamline 3/7/14-day check-in tasks with status updates, treatment outcome tracking, and overdue reminders.
+- **Sensor & Trap Ingestion**: Enable visualization of trap counts, soil moisture sensors, NPK soil health data, and threshold alerts in `PestLogPage.jsx`.
+
+### 4. Geospatial Hotspots & Agriculture Official Dashboard
+- **Geospatial Hotspot Map**: Enhance interactive hotspot rendering with village-level privacy aggregation, crop/disease filters, and time-range selectors in `HotspotsPage.jsx`.
+- **Agriculture Official Analytics**: Expand `OfficialDashboard.jsx` with outbreak timeline visualizations, district/block trends, and downloadable CSV/PDF reports.
+
+### 5. Agronomic Tools & Kisan Mitra AI Assistant
+- **Farm Profit & NPK Fertilizer Calculators**: Optimize financial revenue estimators and NPK nutrient dosing calculators with interactive sliders and real-time break-even metrics in `ToolsPage.jsx`.
+- **Kisan Mitra Voice & Text Assistant**: Enhance voice input handling (Vosk model / Web Speech fallback) and multilingual support (English, Bengali, Hindi).
+
+### 6. Design System, UI/UX & Performance Optimizations
+- **Aesthetic Glassmorphism & Micro-animations**: Modernize card layouts, badging, ambient background glows, and page transitions across mobile and desktop breakpoints.
+- **Performance & Asset Loading**: Implement skeleton loaders, image compression before upload, lazy loading of heavy components, and robust error boundary fallbacks.
+
+---
+
+## User Review Required
+
+> [!NOTE]
+> All proposed changes are non-breaking and backwards-compatible with existing Spring Boot endpoints and local storage data formats.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Execute Spring Boot unit/integration tests: `mvn test` in `frontend/desktop-tutorial`
+- Build frontend production distribution: `npm run build` in `frontend/desktop-tutorial/frontend`
+- Execute Playwright E2E smoke tests: `npx playwright test e2e/smoke.spec.ts`
+
+### Manual Verification
+- Verify disease diagnosis flow with test images (`test_leaf.jpg`).
+- Test district weather & mandi price retrieval across Bengali, Hindi, and English UI locales.
+- Verify responsive rendering on mobile and desktop viewports.

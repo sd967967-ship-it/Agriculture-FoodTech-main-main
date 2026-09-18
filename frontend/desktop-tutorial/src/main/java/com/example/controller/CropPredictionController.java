@@ -1,0 +1,328 @@
+package com.example.controller;
+
+import com.example.dto.CropMarketInfoDTO;
+import com.example.dto.HarvestInfoDTO;
+import com.example.dto.MandiPriceDTO;
+import com.example.dto.PredictionResponseDTO;
+import com.example.entity.FollowUpTask;
+import com.example.entity.PredictionLog;
+import com.example.repository.FarmRepository;
+import com.example.repository.FollowUpTaskRepository;
+import com.example.repository.PredictionLogRepository;
+import com.example.service.AdvisoryService;
+import com.example.service.AuthService;
+import com.example.service.HarvestTimeService;
+import com.example.service.MandiPriceService;
+import com.example.service.MandiUpdates;
+import com.example.service.ModelInferenceService;
+import com.example.service.SpeechService;
+import com.example.service.TranslationService;
+import com.example.service.WBCropKnowledgeBase;
+import com.example.service.WeatherService;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.time.Instant;
+import java.time.LocalDate;
+
+@RestController
+@RequestMapping("/api/v1")
+@CrossOrigin(origins = "*")
+public class CropPredictionController {
+
+    private final ModelInferenceService modelInferenceService;
+    private final AdvisoryService advisoryService;
+    private final WeatherService weatherService;
+    private final WBCropKnowledgeBase knowledgeBase;
+    private final TranslationService translationService;
+    private final PredictionLogRepository predictionLogRepository;
+    private final FollowUpTaskRepository followUpTaskRepository;
+    private final FarmRepository farmRepository;
+    private final SpeechService speechService;
+    private final MandiUpdates mandiUpdates;
+    private final HarvestTimeService harvestTimeService;
+    private final MandiPriceService mandiPriceService;
+    private final AuthService authService;
+
+    public CropPredictionController(ModelInferenceService modelInferenceService,
+                                    AdvisoryService advisoryService,
+                                    WeatherService weatherService,
+                                    WBCropKnowledgeBase knowledgeBase,
+                                    TranslationService translationService,
+                                    PredictionLogRepository predictionLogRepository,
+                                    FollowUpTaskRepository followUpTaskRepository,
+                                    FarmRepository farmRepository,
+                                    SpeechService speechService,
+                                    MandiUpdates mandiUpdates,
+                                    HarvestTimeService harvestTimeService,
+                                    MandiPriceService mandiPriceService,
+                                    AuthService authService) {
+        this.modelInferenceService = modelInferenceService;
+        this.advisoryService = advisoryService;
+        this.weatherService = weatherService;
+        this.knowledgeBase = knowledgeBase;
+        this.translationService = translationService;
+        this.predictionLogRepository = predictionLogRepository;
+        this.followUpTaskRepository = followUpTaskRepository;
+        this.farmRepository = farmRepository;
+        this.speechService = speechService;
+        this.mandiUpdates = mandiUpdates;
+        this.harvestTimeService = harvestTimeService;
+        this.mandiPriceService = mandiPriceService;
+        this.authService = authService;
+    }
+
+    /**
+     * Main diagnosis endpoint — accepts leaf image + farm metadata,
+     * returns full explainable advisory with translation.
+     */
+    @PostMapping(value = "/diagnose", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PredictionResponseDTO diagnose(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "farmId", required = false) String farmId,
+            @RequestParam(value = "cropType", required = false) String cropType,
+            @RequestParam(value = "cropStage", required = false) String cropStage,
+            @RequestParam(value = "district", required = false) String district,
+            @RequestParam(value = "latitude", required = false) String latitude,
+            @RequestParam(value = "longitude", required = false) String longitude,
+            @RequestParam(value = "observations", required = false) String observations,
+            @RequestParam(value = "language", required = false) String language) {
+
+        // 1. Run model inference
+        Map<String, Double> predictions = modelInferenceService.predict(image, cropType);
+
+        // 2. Resolve district from GPS if not specified
+        Double lat = parseDouble(latitude);
+        Double lng = parseDouble(longitude);
+        if ((district == null || district.isBlank()) && lat != null && lng != null) {
+            WBCropKnowledgeBase.DistrictInfo nearest = knowledgeBase.findNearestDistrict(lat, lng);
+            if (nearest != null) district = nearest.name();
+        }
+
+        // 3. Get weather context
+        String weather = weatherService.getWeatherContext(lat, lng);
+
+        // 4. Build full advisory
+        PredictionResponseDTO response = advisoryService.buildAdvisory(
+                predictions, cropType, cropStage, district,
+                observations, weather,
+                language != null ? language : "en");
+
+        // 5. Log prediction and auto-create follow-up task 7 days out
+        try {
+            PredictionLog savedLog = predictionLogRepository.save(new PredictionLog(
+                    cropType, cropStage, district, lat, lng,
+                    observations, response.primaryDiagnosis(),
+                    response.confidence(), response.diagnosisType(),
+                    response.escalateToExpert(),
+                    language != null ? language : "en"));
+
+            if (followUpTaskRepository != null) {
+                Long resolvedFarmId = parseLong(farmId);
+                if (resolvedFarmId == null) {
+                    resolvedFarmId = resolveDefaultFarmId(district);
+                }
+                LocalDate dueDate = LocalDate.now().plusDays(7);
+                String taskTitle = "Follow-up: Inspect field recovery for "
+                        + (response.primaryDiagnosis() != null ? response.primaryDiagnosis() : "crop")
+                        + " following recommended treatment.";
+
+                followUpTaskRepository.save(new FollowUpTask(
+                        resolvedFarmId,
+                        savedLog.getId(),
+                        dueDate,
+                        "PENDING",
+                        taskTitle
+                ));
+            }
+        } catch (Exception ignored) {
+            // Don't fail the response if logging or follow-up scheduling fails
+        }
+
+        return response;
+    }
+
+    /**
+     * Returns all WB districts for the mobile UI dropdown.
+     */
+    @GetMapping("/districts")
+    public List<Map<String, Object>> getDistricts() {
+        return knowledgeBase.getAllDistricts().values().stream()
+                .map(d -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("name", d.name());
+                    m.put("latitude", d.latitude());
+                    m.put("longitude", d.longitude());
+                    m.put("zone", d.agroClimaticZone());
+                    m.put("majorCrops", d.majorCrops());
+                    m.put("kvkPhone", d.kvkPhone());
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all WB crops with stages for the mobile UI.
+     */
+    @GetMapping("/crops")
+    public List<Map<String, Object>> getCrops() {
+        return knowledgeBase.getAllCrops().values().stream()
+                .map(c -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("name", c.name());
+                    m.put("stages", c.stages());
+                    m.put("kharifSeason", c.kharifSeason());
+                    m.put("rabiSeason", c.rabiSeason());
+                    m.put("commonDiseases", c.commonDiseases());
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all translation strings for frontend i18n.
+     */
+    @GetMapping("/translations")
+    public Map<String, Map<String, String>> getTranslations() {
+        return translationService.getAllPhrases();
+    }
+
+    @GetMapping("/market-info/{cropName}")
+    public CropMarketInfoDTO getMarketInfoForCrop(@PathVariable("cropName") String cropName) {
+        HarvestInfoDTO harvest = harvestTimeService.getHarvestInfo(cropName);
+        List<MandiPriceDTO> prices = mandiPriceService.getPrices(cropName);
+        return new CropMarketInfoDTO(harvest, prices, Instant.now().toString());
+    }
+
+    @GetMapping("/market-info")
+    public Map<String, Object> getAllMarketInfo() {
+        List<CropMarketInfoDTO> items = new ArrayList<>();
+        for (String crop : harvestTimeService.getAvailableCrops()) {
+            items.add(new CropMarketInfoDTO(
+                    harvestTimeService.getHarvestInfo(crop),
+                    mandiPriceService.getPrices(crop),
+                    Instant.now().toString()));
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("crops", items);
+        result.put("liveApiAvailable", mandiPriceService.isLiveApiAvailable());
+        result.put("timestamp", Instant.now().toString());
+        return result;
+    }
+
+    @GetMapping("/weather")
+    public Map<String, Object> weather(@RequestParam(value = "lat", required = false) Double latitude,
+                                      @RequestParam(value = "lon", required = false) Double longitude) {
+        return weatherService.getLiveWeather(latitude, longitude);
+    }
+
+    @GetMapping("/kvk")
+    public Map<String, Object> kvk(@RequestParam(value = "district", required = false) String district,
+                                  @RequestParam(value = "lat", required = false) Double latitude,
+                                  @RequestParam(value = "lon", required = false) Double longitude) {
+        return knowledgeBase.getKvkDetails(district, latitude, longitude);
+    }
+
+    @GetMapping("/mandi-prices")
+    public Map<String, Object> mandiPrices(@RequestParam(value = "crop", required = false) String crop,
+                                          @RequestParam(value = "state", required = false) String state,
+                                          @RequestParam(value = "district", required = false) String district) {
+        return mandiUpdates.getLivePrices(crop, state, district, 8);
+    }
+
+    @PostMapping(value = "/speech/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> transcribe(@RequestPart("audio") MultipartFile audio,
+                                         @RequestPart(value = "language", required = false) String language) {
+        try {
+            String transcript = speechService.transcribe(audio);
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("transcript", transcript);
+            response.put("language", language != null && !language.isBlank() ? language : "en");
+            return response;
+        } catch (Exception ex) {
+            Map<String, Object> error = new LinkedHashMap<>();
+            error.put("transcript", "");
+            error.put("error", ex.getMessage());
+            error.put("language", language != null && !language.isBlank() ? language : "en");
+            return error;
+        }
+    }
+
+    /**
+     * Health check for PWA connectivity detection.
+     */
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        Map<String, Object> h = new LinkedHashMap<>();
+        h.put("status", "UP");
+        h.put("service", "FasalSathi");
+        h.put("timestamp", System.currentTimeMillis());
+        return h;
+    }
+
+    /** Returns the most recent local diagnosis records for the farmer history view. */
+    @GetMapping("/diagnosis-history")
+    public List<PredictionLog> diagnosisHistory(
+            @RequestHeader(value = "X-Session-Token", required = false) String sessionToken) {
+        return authService.findBySessionToken(sessionToken)
+            .map(user -> "ADMIN".equals(user.getRole())
+                ? predictionLogRepository.findTop100ByOrderByCreatedAtDesc()
+                : predictionLogRepository.findTop100ByFarmerUsernameOrderByCreatedAtDesc(user.getUsername()))
+                .orElseGet(List::of);
+    }
+
+    private Double parseDouble(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long parseLong(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long resolveDefaultFarmId(String district) {
+        if (farmRepository != null) {
+            try {
+                if (district != null && !district.isBlank()) {
+                    var match = farmRepository.findAll().stream()
+                            .filter(f -> district.equalsIgnoreCase(f.getDistrict()))
+                            .findFirst();
+                    if (match.isPresent()) return match.get().getId();
+                }
+                var any = farmRepository.findAll().stream().findFirst();
+                if (any.isPresent()) return any.get().getId();
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
+        return 1L;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> invalidRequest(IllegalArgumentException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "INVALID_REQUEST",
+                "message", exception.getMessage() != null ? exception.getMessage() : "Please check the submitted image and fields."));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> serviceFailure(IllegalStateException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "error", "SERVICE_UNAVAILABLE",
+                "message", "The diagnosis service is temporarily unavailable. Please try again."));
+    }
+}

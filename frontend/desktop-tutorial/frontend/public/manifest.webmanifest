@@ -1,0 +1,19 @@
+{
+  "name": "FasalSathi - AI Crop Disease Advisor",
+  "short_name": "FasalSathi",
+  "description": "Crop disease guidance and farm planning for West Bengal farmers.",
+  "start_url": "/?mode=mobile",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#08130f",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
