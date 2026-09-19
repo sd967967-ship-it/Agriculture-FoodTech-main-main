@@ -149,6 +149,10 @@ public class ModelInferenceService {
     }
 
     private Map<String, Double> fallbackPredict(String cropType) {
+        // NOTE: No ML model is loaded. These are illustrative placeholder probabilities only.
+        // Healthy is kept above disease classes to avoid false treatment alerts,
+        // but confidence is kept below ESCALATION_THRESHOLD (0.50) where possible
+        // so users see an appropriate advisory warning.
         Map<String, Double> result = new LinkedHashMap<>();
         String normalizedCrop = cropType == null ? "Rice" : cropType.trim();
         if (normalizedCrop.isBlank()) {
@@ -157,39 +161,67 @@ public class ModelInferenceService {
 
         switch (normalizedCrop.toLowerCase(Locale.ROOT)) {
             case "potato" -> {
-                result.put("Potato___healthy", 0.54);
-                result.put("Potato___Late_blight", 0.26);
-                result.put("Potato___Early_blight", 0.20);
+                result.put("Potato___healthy", 0.46);
+                result.put("Potato___Late_blight", 0.32);
+                result.put("Potato___Early_blight", 0.22);
             }
             case "tomato" -> {
-                result.put("Tomato_healthy", 0.52);
-                result.put("Tomato_Early_blight", 0.27);
-                result.put("Tomato_Late_blight", 0.21);
+                result.put("Tomato_healthy", 0.44);
+                result.put("Tomato_Early_blight", 0.33);
+                result.put("Tomato_Late_blight", 0.23);
             }
             case "rice" -> {
-                result.put("Rice___healthy", 0.55);
-                result.put("Rice___Brown_spot", 0.25);
-                result.put("Rice___Leaf_blast", 0.20);
+                result.put("Rice___healthy", 0.47);
+                result.put("Rice___Brown_spot", 0.31);
+                result.put("Rice___Leaf_blast", 0.22);
             }
             case "mustard" -> {
-                result.put("Mustard_healthy", 0.57);
-                result.put("Mustard_Alternaria", 0.23);
-                result.put("Mustard_White_rust", 0.20);
+                // Use consistent label naming matching WBCropKnowledgeBase advisory keys
+                result.put("Mustard___healthy", 0.46);
+                result.put("Mustard___Alternaria_blight", 0.32);
+                result.put("Mustard___White_rust", 0.22);
             }
             case "jute" -> {
-                result.put("Jute_healthy", 0.58);
-                result.put("Jute_Stem_rot", 0.22);
-                result.put("Jute_Leaf_curl", 0.20);
+                // Use consistent label naming matching WBCropKnowledgeBase advisory keys
+                result.put("Jute___healthy", 0.46);
+                result.put("Jute___Stem_rot", 0.32);
+                result.put("Jute___Leaf_curl", 0.22);
             }
             case "mango" -> {
-                result.put("Mango_healthy", 0.56);
-                result.put("Mango_Powdery_mildew", 0.24);
-                result.put("Mango_Anthracnose", 0.20);
+                // Use consistent label naming matching WBCropKnowledgeBase advisory keys
+                result.put("Mango___healthy", 0.46);
+                result.put("Mango___Powdery_mildew", 0.32);
+                result.put("Mango___Anthracnose", 0.22);
+            }
+            case "tea" -> {
+                result.put("Tea___healthy", 0.46);
+                result.put("Tea___Red_spider_mite", 0.32);
+                result.put("Tea___Blister_blight", 0.22);
+            }
+            case "brinjal" -> {
+                result.put("Brinjal___healthy", 0.46);
+                result.put("Brinjal___Phomopsis_blight", 0.32);
+                result.put("Brinjal___Little_leaf", 0.22);
+            }
+            case "chilli" -> {
+                result.put("Chilli___healthy", 0.46);
+                result.put("Chilli___Anthracnose", 0.32);
+                result.put("Chilli___Leaf_curl", 0.22);
+            }
+            case "wheat" -> {
+                result.put("Wheat___healthy", 0.46);
+                result.put("Wheat___Yellow_rust", 0.32);
+                result.put("Wheat___Powdery_mildew", 0.22);
+            }
+            case "maize" -> {
+                result.put("Maize___healthy", 0.46);
+                result.put("Maize___Northern_blight", 0.32);
+                result.put("Maize___Grey_leaf_spot", 0.22);
             }
             default -> {
-                result.put("Rice___healthy", 0.56);
-                result.put("Rice___Brown_spot", 0.24);
-                result.put("Rice___Leaf_blast", 0.20);
+                result.put("Rice___healthy", 0.47);
+                result.put("Rice___Brown_spot", 0.31);
+                result.put("Rice___Leaf_blast", 0.22);
             }
         }
 

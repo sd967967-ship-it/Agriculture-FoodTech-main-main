@@ -870,7 +870,36 @@ export default function DiagnosePage() {
               <h2 className="text-3xl font-black tracking-[-0.04em] text-slate-100">{displayDiagnosis}</h2>
               <DiagnosisBadge type={result.diagnosisType} language={language} />
             </div>
-            
+
+            {/* Fallback-mode warning: shown when confidence matches known static fallback values
+                (i.e., no ML model is loaded and results are illustrative only) */}
+            {result.diagnosisType === 'ADVISORY_SUPPORT' &&
+              (result.confidence === 0.525 || result.confidence === 0.514 ||
+               result.confidence === 0.547 || result.confidence === 0.558 ||
+               result.confidence === 0.55 || result.confidence === 0.493 ||
+               result.confidence === 0.44 || result.confidence === 0.46 ||
+               result.confidence === 0.47) && (
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+                <span className="mt-0.5 text-lg">⚠️</span>
+                <div>
+                  <span className="font-semibold">
+                    {language === 'bn'
+                      ? 'AI মডেল লোড নেই — ফলাফল উদাহরণমাত্র'
+                      : language === 'hi'
+                      ? 'AI मॉडल लोड नहीं — परिणाम केवल उदाहरण हैं'
+                      : 'AI model not loaded — results are illustrative only'}
+                  </span>
+                  <span className="ml-1">
+                    {language === 'bn'
+                      ? 'প্রকৃত রোগ নির্ণয়ের জন্য একজন KVK বিশেষজ্ঞের সাথে যোগাযোগ করুন।'
+                      : language === 'hi'
+                      ? 'वास्तविक निदान के लिए अपने KVK विशेषज्ञ से संपर्क करें।'
+                      : 'For real image-based analysis, contact your nearest KVK expert.'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {translationLoading ? (
               <p className="mb-8 rounded-lg border border-emerald-800/40 bg-emerald-950/30 p-4 text-sm text-emerald-200" role="status">
                 {language === 'bn' ? 'ফলাফল অনুবাদ করা হচ্ছে...' : language === 'hi' ? 'परिणाम का अनुवाद हो रहा है...' : 'Translating diagnosis...'}
@@ -908,6 +937,7 @@ export default function DiagnosePage() {
             {result.diagnosisType !== 'IMAGE_NOT_MATCHED' && <div className="mb-8">
               <h3 className="mb-4 text-xl font-bold text-slate-100">{labelText.actionPlan}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
                 <ActionCard
                   stepNumber={1}
                   icon="🌿"

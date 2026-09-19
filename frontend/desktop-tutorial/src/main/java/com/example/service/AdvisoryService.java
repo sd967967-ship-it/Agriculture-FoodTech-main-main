@@ -182,11 +182,17 @@ public class AdvisoryService {
                 + ". This result is uncertain because the strongest model signal did not match the selected crop. "
                 + "Verify the symptoms with a clear close-up photo and an agriculture expert before treatment.";
             String escalation = "The selected crop and model signal do not fully agree. Confirm the disease with a KVK or agriculture expert before applying chemical treatment.";
+            // Populate at least the top candidate so the UI candidate list is not empty
+            String candExplanation = advisory != null
+                ? advisory.description()
+                : "No detailed information available for this condition.";
+            List<DiagnosisDetailDTO> candidates = List.of(
+                new DiagnosisDetailDTO(likelyCondition, confidence, candExplanation, true));
             return new PredictionResponseDTO(
                 "ADVISORY_SUPPORT",
                 likelyCondition,
                 confidence,
-                List.of(),
+                candidates,
                 explanation,
                 "",
                 List.of("Retake a clear photo of one leaf from the selected crop.", "Use natural light and keep the affected area in focus.", "Do not apply chemical treatment based on this result."),
@@ -206,7 +212,11 @@ public class AdvisoryService {
                     null,
                     null,
                     null,
-                    List.of()),
+                    List.of(new DiagnosisDetailDTO(
+                        translationService.translateDiseaseName(likelyCondition, language),
+                        confidence,
+                        translationService.translateNarrative(candExplanation, language),
+                        true))),
                 null);
             }
 
