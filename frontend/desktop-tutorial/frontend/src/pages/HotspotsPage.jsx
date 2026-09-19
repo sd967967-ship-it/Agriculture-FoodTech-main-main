@@ -142,7 +142,7 @@ const DISTRICT_BLOCK_MAP = {
   Howrah: { block: 'Uluberia Block', lat: 22.590, lon: 88.310, radius: 2.2 }
 };
 
-function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
+function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = {} }) {
   const mapElement = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
@@ -279,7 +279,6 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
       const isSelected = activeCluster && (activeCluster.id === item.id || activeCluster.district === item.district);
 
       // 1. Specific Localized Surveillance Buffer Zone
-      // Replaces the giant opaque red blob with a crisp, translucent containment perimeter
       const containmentRing = L.circleMarker([lat, lon], {
         radius: isHigh ? (isSelected ? 16 : 13) : isMed ? (isSelected ? 13 : 10) : 8,
         color: isSelected ? '#ffffff' : color,
@@ -302,7 +301,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
       const popupHtml = `
         <div style="min-width: 180px; font-family: inherit; line-height: 1.45;">
           <div style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
-            ${item.block || item.village || `${item.district} District`}
+            ${item.block || item.village || `${item.district} ${text.fallbackSector || 'District Surveillance Area'}`}
           </div>
           <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 6px;">
             ${item.district}
@@ -310,16 +309,16 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
           <div style="display: inline-block; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 800; margin-bottom: 8px; background: ${
             isHigh ? 'rgba(239, 68, 68, 0.2)' : isMed ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'
           }; color: ${color}; border: 1px solid ${color}40;">
-            ${item.riskLevel} RISK • ${item.radiusKm || '3.0'} km Targeted Zone
+            ${item.riskLevel} ${text.riskLabel || 'RISK'} • ${item.radiusKm || '3.0'} ${text.kmBuffer || 'km buffer'}
           </div>
           <div style="font-size: 12px; color: #e2e8f0; margin-bottom: 4px;">
-            <strong>Primary Issue:</strong> <span style="color: #6ee7b7;">${item.topIssue || 'Pest/Disease'}</span>
+            <strong>${text.topIssue || 'Primary Disease/Pest'}:</strong> <span style="color: #6ee7b7;">${item.topIssue || text.noReports || 'Pest/Disease'}</span>
           </div>
           <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 6px;">
-            <strong>Incident Reports:</strong> <span style="color: #ffffff; font-weight: 700;">${item.cases || 1} verified cases</span>
+            <strong>${text.cases || 'Incident Reports'}:</strong> <span style="color: #ffffff; font-weight: 700;">${item.cases || 1} ${text.verifiedReports || 'verified reports'}</span>
           </div>
           <div style="font-size: 11px; color: #94a3b8; font-family: monospace; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.12);">
-            Epicenter: ${lat.toFixed(3)}°N, ${lon.toFixed(3)}°E
+            ${text.gpsEpicenter || 'GPS Epicenter'}: ${lat.toFixed(3)}°N, ${lon.toFixed(3)}°E
           </div>
         </div>
       `;
@@ -337,7 +336,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
 
       markersRef.current.push(containmentRing, epicenterMarker);
     });
-  }, [hotspots, activeCluster, onSelect]);
+  }, [hotspots, activeCluster, onSelect, text]);
 
   // Quick Action Buttons
   const handleZoomIn = () => {
@@ -369,14 +368,14 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
 
   return (
     <div className="relative h-full w-full">
-      <div ref={mapElement} className="h-full w-full" aria-label="West Bengal hotspot map" />
+      <div ref={mapElement} className="h-full w-full" aria-label={text.mapTitle || "West Bengal hotspot map"} />
 
       {/* Floating Interactive Map Controls */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/90 p-1.5 shadow-2xl backdrop-blur-md">
         <button
           type="button"
           onClick={handleZoomIn}
-          title="Zoom In"
+          title={text.zoomIn || "Zoom In"}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-950/80 text-base font-black text-emerald-300 border border-emerald-500/20 hover:bg-emerald-800 hover:text-white active:scale-95 transition-all"
         >
           +
@@ -384,7 +383,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
         <button
           type="button"
           onClick={handleZoomOut}
-          title="Zoom Out"
+          title={text.zoomOut || "Zoom Out"}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-950/80 text-base font-black text-emerald-300 border border-emerald-500/20 hover:bg-emerald-800 hover:text-white active:scale-95 transition-all"
         >
           −
@@ -393,21 +392,21 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
         <button
           type="button"
           onClick={handleResetBengalView}
-          title="Zoom out to entire West Bengal"
+          title={text.resetButton || "Zoom out to entire West Bengal"}
           className="flex items-center gap-1.5 rounded-lg bg-slate-800/90 px-2.5 py-1.5 text-xs font-bold text-slate-200 border border-slate-700 hover:border-emerald-500/50 hover:bg-slate-700 hover:text-white active:scale-95 transition-all"
         >
           <span>⟲</span>
-          <span className="hidden sm:inline">State View</span>
+          <span className="hidden sm:inline">{text.stateView || 'State View'}</span>
         </button>
         {activeCluster && (
           <button
             type="button"
             onClick={handleFocusActiveHotspot}
-            title={`Zoom directly into ${activeCluster.district}`}
+            title={text.focusButton || `Zoom directly into ${activeCluster.district}`}
             className="flex items-center gap-1.5 rounded-lg bg-emerald-600/90 px-2.5 py-1.5 text-xs font-bold text-white shadow-md hover:bg-emerald-500 active:scale-95 transition-all"
           >
             <span>🎯</span>
-            <span className="hidden sm:inline">Focus Zone</span>
+            <span className="hidden sm:inline">{text.focusZone || 'Focus Zone'}</span>
           </button>
         )}
       </div>
@@ -416,7 +415,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError }) {
       <div className="absolute bottom-3 left-3 z-[1000] rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1 text-[11px] font-mono text-slate-300 shadow-lg backdrop-blur-sm">
         Zoom: <span className="font-bold text-emerald-400">{zoomLevel}x</span>
         <span className="ml-1.5 text-slate-400">
-          ({zoomLevel >= 11 ? 'Block/Field Level' : zoomLevel >= 8.5 ? 'Sub-division' : 'State Overview'})
+          ({zoomLevel >= 11 ? (text.zoomField || 'Block/Field Level') : zoomLevel >= 8.5 ? (text.zoomSubdiv || 'Sub-division') : (text.zoomState || 'State Overview')})
         </span>
       </div>
     </div>
@@ -448,7 +447,52 @@ const textContent = {
     blockLabel: 'Targeted Block / Sector',
     containmentZone: 'Targeted Containment Perimeter',
     focusButton: '🎯 Zoom & Focus on Map',
-    resetButton: '⟲ State Overview'
+    resetButton: '⟲ State Overview',
+    mapTitle: 'West Bengal Geospatial Surveillance Map',
+    blockPrecision: 'Block-Level Precision',
+    mapLoadError: 'The map tiles could not load. The verified hotspot list below is still available.',
+    zoomTip: 'Tip: Click any cluster or use +/− to zoom directly into village fields',
+    fallbackDistrict: 'West Bengal',
+    fallbackSector: 'District Surveillance Area',
+    riskLabel: 'RISK',
+    noDataLabel: 'NO DATA',
+    noReports: 'No recent reports',
+    hostCrop: 'Host Crop',
+    verifiedReports: 'verified reports',
+    surveillanceBuffer: 'Surveillance Buffer',
+    containmentRadius: 'containment radius',
+    selectHotspot: 'Select a hotspot to view field guidance.',
+    gpsEpicenter: 'GPS Epicenter',
+    notAvailable: 'Not available',
+    verifiedData: 'Verified Field Data',
+    tableClickHint: 'Click any row to automatically fly and zoom directly into that specific localized cluster',
+    thDistrictBlock: 'District & Block',
+    thCrop: 'Crop',
+    thReports: 'Reports',
+    thDiagnosis: 'Target Diagnosis',
+    thRiskLevel: 'Risk Level',
+    thRadius: 'Surveillance Radius',
+    thAdvisory: 'Field Advisory',
+    fallbackSurveillance: 'Surveillance Sector',
+    kmBuffer: 'km buffer',
+    cropRice: 'Rice',
+    cropPotato: 'Potato',
+    cropTomato: 'Tomato',
+    cropMustard: 'Mustard',
+    cropMango: 'Mango',
+    cropJute: 'Jute',
+    cropTea: 'Tea',
+    cropBrinjal: 'Brinjal',
+    cropChilli: 'Chilli',
+    cropWheat: 'Wheat',
+    cropMaize: 'Maize',
+    stateView: 'State View',
+    focusZone: 'Focus Zone',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    zoomState: 'State Overview',
+    zoomSubdiv: 'Sub-division',
+    zoomField: 'Block/Field Level'
   },
   bn: {
     eyebrow: 'ভূ-স্থানিক নজরদারি',
@@ -474,7 +518,52 @@ const textContent = {
     blockLabel: 'নির্দিষ্ট ব্লক / এলাকা',
     containmentZone: 'নজরদারি ও নিয়ন্ত্রণ অঞ্চল',
     focusButton: '🎯 মানচিত্রে জুম করুন',
-    resetButton: '⟲ রাজ্য দৃশ্য'
+    resetButton: '⟲ রাজ্য দৃশ্য',
+    mapTitle: 'পশ্চিমবঙ্গ ভূ-স্থানিক নজরদারি মানচিত্র',
+    blockPrecision: 'ব্লক-স্তরের নির্ভুলতা',
+    mapLoadError: 'মানচিত্রের টাইলস লোড হয়নি। নিচের যাচাইকৃত হটস্পট তালিকা এখনও দেখা যাবে।',
+    zoomTip: 'টিপ: যেকোনো ক্লাস্টারে ক্লিক করুন বা +/− ব্যবহার করে গ্রামের মাঠে জুম করুন',
+    fallbackDistrict: 'পশ্চিমবঙ্গ',
+    fallbackSector: 'জেলা নজরদারি এলাকা',
+    riskLabel: 'ঝুঁকি',
+    noDataLabel: 'তথ্য নেই',
+    noReports: 'সাম্প্রতিক কোনো রিপোর্ট নেই',
+    hostCrop: 'আক্রান্ত ফসল',
+    verifiedReports: 'যাচাইকৃত রিপোর্ট',
+    surveillanceBuffer: 'নজরদারি বাফার',
+    containmentRadius: 'নিয়ন্ত্রণ ব্যাসার্ধ',
+    selectHotspot: 'মাঠের নির্দেশনা দেখতে একটি হটস্পট নির্বাচন করুন।',
+    gpsEpicenter: 'জিপিএস কেন্দ্রবিন্দু',
+    notAvailable: 'উপলব্ধ নয়',
+    verifiedData: 'যাচাইকৃত মাঠের তথ্য',
+    tableClickHint: 'সরাসরি সেই নির্দিষ্ট ক্লাস্টারে জুম করতে যেকোনো সারিতে ক্লিক করুন',
+    thDistrictBlock: 'জেলা ও ব্লক',
+    thCrop: 'ফসল',
+    thReports: 'রিপোর্ট',
+    thDiagnosis: 'লক্ষ্য রোগ নির্ণয়',
+    thRiskLevel: 'ঝুঁকির মাত্রা',
+    thRadius: 'নজরদারি ব্যাসার্ধ',
+    thAdvisory: 'মাঠের পরামর্শ',
+    fallbackSurveillance: 'নজরদারি এলাকা',
+    kmBuffer: 'কিমি বাফার',
+    cropRice: 'ধান',
+    cropPotato: 'আলু',
+    cropTomato: 'টমেটো',
+    cropMustard: 'সরষে',
+    cropMango: 'আম',
+    cropJute: 'পাট',
+    cropTea: 'চা',
+    cropBrinjal: 'বেগুন',
+    cropChilli: 'লঙ্কা',
+    cropWheat: 'গম',
+    cropMaize: 'ভুট্টা',
+    stateView: 'রাজ্য দৃশ্য',
+    focusZone: 'ফোকাস জোন',
+    zoomIn: 'জুম ইন',
+    zoomOut: 'জুম আউট',
+    zoomState: 'রাজ্য দৃশ্য',
+    zoomSubdiv: 'মহকুমা',
+    zoomField: 'ব্লক/মাঠ স্তর'
   },
   hi: {
     eyebrow: 'भू-स्थानिक निगरानी',
@@ -500,8 +589,61 @@ const textContent = {
     blockLabel: 'लक्षित ब्लॉक / क्षेत्र',
     containmentZone: 'लक्षित नियंत्रण परिधि',
     focusButton: '🎯 मानचित्र पर ज़ूम करें',
-    resetButton: '⟲ राज्य अवलोकन'
+    resetButton: '⟲ राज्य अवलोकन',
+    mapTitle: 'पश्चिम बंगाल भू-स्थानिक निगरानी मानचित्र',
+    blockPrecision: 'ब्लॉक-स्तरीय सटीकता',
+    mapLoadError: 'मानचित्र टाइल्स लोड नहीं हो सकीं। नीचे सत्यापित हॉटस्पॉट सूची उपलब्ध है।',
+    zoomTip: 'सुझाव: किसी भी क्लस्टर पर क्लिक करें या +/− से गाँव के खेतों में ज़ूम करें',
+    fallbackDistrict: 'पश्चिम बंगाल',
+    fallbackSector: 'जिला निगरानी क्षेत्र',
+    riskLabel: 'जोखिम',
+    noDataLabel: 'डेटा नहीं',
+    noReports: 'कोई हालिया रिपोर्ट नहीं',
+    hostCrop: 'प्रभावित फसल',
+    verifiedReports: 'सत्यापित रिपोर्ट',
+    surveillanceBuffer: 'निगरानी बफर',
+    containmentRadius: 'नियंत्रण दायरा',
+    selectHotspot: 'मैदानी मार्गदर्शन देखने के लिए एक हॉटस्पॉट चुनें।',
+    gpsEpicenter: 'जीपीएस केंद्र',
+    notAvailable: 'उपलब्ध नहीं',
+    verifiedData: 'सत्यापित मैदानी डेटा',
+    tableClickHint: 'उस विशिष्ट क्लस्टर में सीधे ज़ूम करने के लिए किसी भी पंक्ति पर क्लिक करें',
+    thDistrictBlock: 'जिला और ब्लॉक',
+    thCrop: 'फसल',
+    thReports: 'रिपोर्ट',
+    thDiagnosis: 'लक्ष्य निदान',
+    thRiskLevel: 'जोखिम स्तर',
+    thRadius: 'निगरानी दायरा',
+    thAdvisory: 'मैदानी सलाह',
+    fallbackSurveillance: 'निगरानी क्षेत्र',
+    kmBuffer: 'किमी बफर',
+    cropRice: 'धान',
+    cropPotato: 'आलू',
+    cropTomato: 'टमाटर',
+    cropMustard: 'सरसों',
+    cropMango: 'आम',
+    cropJute: 'जूट',
+    cropTea: 'चाय',
+    cropBrinjal: 'बैंगन',
+    cropChilli: 'मिर्च',
+    cropWheat: 'गेहूं',
+    cropMaize: 'मक्का',
+    stateView: 'राज्य दृश्य',
+    focusZone: 'फोकस ज़ोन',
+    zoomIn: 'ज़ूम इन',
+    zoomOut: 'ज़ूम आउट',
+    zoomState: 'राज्य अवलोकन',
+    zoomSubdiv: 'उप-मंडल',
+    zoomField: 'ब्लॉक/खेत स्तर'
   },
+};
+
+const CROP_FILTER_OPTIONS = ['Rice', 'Potato', 'Tomato', 'Mustard', 'Mango'];
+
+export const getCropName = (crop, text) => {
+  if (!crop) return '';
+  const key = `crop${crop.charAt(0).toUpperCase() + crop.slice(1).toLowerCase()}`;
+  return text?.[key] || crop;
 };
 
 export default function HotspotsPage() {
@@ -591,11 +733,11 @@ export default function HotspotsPage() {
               className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-200 outline-none focus:border-emerald-400"
             >
               <option value="">{text.allCrops}</option>
-              <option value="Rice">Rice</option>
-              <option value="Potato">Potato</option>
-              <option value="Tomato">Tomato</option>
-              <option value="Mustard">Mustard</option>
-              <option value="Mango">Mango</option>
+              {CROP_FILTER_OPTIONS.map((crop) => (
+                <option key={crop} value={crop}>
+                  {getCropName(crop, text)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -634,12 +776,12 @@ export default function HotspotsPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                🗺️ West Bengal Geospatial Surveillance Map
+                🗺️ {text.mapTitle}
               </h2>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-300 font-mono">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Block-Level Precision</span>
+              <span>{text.blockPrecision}</span>
             </div>
           </div>
 
@@ -647,7 +789,7 @@ export default function HotspotsPage() {
           <div className="relative h-[440px] md:h-[480px] overflow-hidden rounded-xl border border-emerald-900/60 bg-[#081510] shadow-inner">
             {mapError ? (
               <div className="grid h-full place-items-center p-6 text-center text-sm text-slate-300">
-                The map tiles could not load. The verified hotspot list below is still available.
+                {text.mapLoadError}
               </div>
             ) : (
               <LiveHotspotMap
@@ -655,6 +797,7 @@ export default function HotspotsPage() {
                 activeCluster={activeCluster}
                 onSelect={setActiveCluster}
                 onMapError={handleMapError}
+                text={text}
               />
             )}
           </div>
@@ -664,7 +807,7 @@ export default function HotspotsPage() {
               {text.mapNote}
             </p>
             <span className="text-emerald-400 font-semibold">
-              Tip: Click any cluster or use +/− to zoom directly into village fields
+              {text.zoomTip}
             </span>
           </div>
         </div>
@@ -677,9 +820,9 @@ export default function HotspotsPage() {
                 <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
                   {text.selectedDistrict}
                 </span>
-                <h3 className="text-2xl font-black text-white">{activeCluster?.district || 'West Bengal'}</h3>
+                <h3 className="text-2xl font-black text-white">{activeCluster?.district || text.fallbackDistrict}</h3>
                 <p className="text-xs font-semibold text-emerald-300/90 mt-0.5">
-                  {activeCluster?.block || activeCluster?.village || 'District Surveillance Area'}
+                  {activeCluster?.block || activeCluster?.village || text.fallbackSector}
                 </p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
@@ -689,7 +832,7 @@ export default function HotspotsPage() {
                   ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
                   : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40'
               }`}>
-                {activeCluster?.riskLevel || 'NO DATA'} {activeCluster ? 'RISK' : ''}
+                {activeCluster?.riskLevel || text.noDataLabel} {activeCluster ? text.riskLabel : ''}
               </span>
             </div>
 
@@ -697,11 +840,11 @@ export default function HotspotsPage() {
               <div className="rounded-xl bg-slate-900/70 p-3.5 border border-slate-800">
                 <p className="text-xs text-slate-400 font-semibold">{text.topIssue}</p>
                 <p className="mt-1 text-base font-bold text-emerald-300">
-                  🦠 {activeCluster?.topIssue || 'No recent reports'}
+                  🦠 {activeCluster?.topIssue || text.noReports}
                 </p>
                 {activeCluster?.crop && (
                   <span className="inline-block mt-1 text-xs text-slate-400">
-                    Host Crop: <strong className="text-slate-200">{activeCluster.crop}</strong>
+                    {text.hostCrop}: <strong className="text-slate-200">{getCropName(activeCluster.crop, text)}</strong>
                   </span>
                 )}
               </div>
@@ -712,15 +855,15 @@ export default function HotspotsPage() {
                   <p className="mt-1 text-2xl font-black text-white">
                     {activeCluster?.cases || 0}
                   </p>
-                  <span className="text-[10px] text-slate-400 font-medium">verified reports</span>
+                  <span className="text-[10px] text-slate-400 font-medium">{text.verifiedReports}</span>
                 </div>
 
                 <div className="rounded-xl bg-slate-900/70 p-3 border border-slate-800">
-                  <p className="text-xs text-slate-400 font-semibold">Surveillance Buffer</p>
+                  <p className="text-xs text-slate-400 font-semibold">{text.surveillanceBuffer}</p>
                   <p className="mt-1 text-2xl font-black text-emerald-400">
                     {activeCluster?.radiusKm || 3.0} <span className="text-sm font-normal">km</span>
                   </p>
-                  <span className="text-[10px] text-slate-400 font-medium">containment radius</span>
+                  <span className="text-[10px] text-slate-400 font-medium">{text.containmentRadius}</span>
                 </div>
               </div>
 
@@ -729,7 +872,7 @@ export default function HotspotsPage() {
                   {text.action}
                 </p>
                 <p className="mt-2 text-sm text-slate-200 leading-relaxed font-medium">
-                  {activeCluster?.action || 'Select a hotspot to view field guidance.'}
+                  {activeCluster?.action || text.selectHotspot}
                 </p>
               </div>
             </div>
@@ -737,9 +880,9 @@ export default function HotspotsPage() {
 
           <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
             <span>
-              GPS Epicenter: {activeCluster && activeCluster.lat != null ? `${Number(activeCluster.lat).toFixed(3)}°N, ${Number(activeCluster.lon).toFixed(3)}°E` : 'Not available'}
+              {text.gpsEpicenter}: {activeCluster && activeCluster.lat != null ? `${Number(activeCluster.lat).toFixed(3)}°N, ${Number(activeCluster.lon).toFixed(3)}°E` : text.notAvailable}
             </span>
-            <span className="text-emerald-400 font-bold">Verified Field Data</span>
+            <span className="text-emerald-400 font-bold">{text.verifiedData}</span>
           </div>
         </div>
       </div>
@@ -749,7 +892,7 @@ export default function HotspotsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <h3 className="text-xl font-bold text-white">{text.districtList}</h3>
           <span className="text-xs text-slate-400">
-            Click any row to automatically fly and zoom directly into that specific localized cluster
+            {text.tableClickHint}
           </span>
         </div>
 
@@ -757,13 +900,13 @@ export default function HotspotsPage() {
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="border-b border-slate-800 bg-slate-900/80 text-xs font-extrabold uppercase text-slate-400">
               <tr>
-                <th className="px-4 py-3">District & Block</th>
-                <th className="px-4 py-3">Crop</th>
-                <th className="px-4 py-3">Reports</th>
-                <th className="px-4 py-3">Target Diagnosis</th>
-                <th className="px-4 py-3">Risk Level</th>
-                <th className="px-4 py-3">Surveillance Radius</th>
-                <th className="px-4 py-3">Field Advisory</th>
+                <th className="px-4 py-3">{text.thDistrictBlock}</th>
+                <th className="px-4 py-3">{text.thCrop}</th>
+                <th className="px-4 py-3">{text.thReports}</th>
+                <th className="px-4 py-3">{text.thDiagnosis}</th>
+                <th className="px-4 py-3">{text.thRiskLevel}</th>
+                <th className="px-4 py-3">{text.thRadius}</th>
+                <th className="px-4 py-3">{text.thAdvisory}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -786,10 +929,10 @@ export default function HotspotsPage() {
                     <td className="px-4 py-3.5">
                       <div className="font-bold text-white">{item.district}</div>
                       <div className="text-xs text-emerald-300 font-medium">
-                        {item.block || item.village || 'Surveillance Sector'}
+                        {item.block || item.village || text.fallbackSurveillance}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 font-medium text-slate-300">{item.crop || 'All'}</td>
+                    <td className="px-4 py-3.5 font-medium text-slate-300">{item.crop ? getCropName(item.crop, text) : text.allCrops}</td>
                     <td className="px-4 py-3.5 font-black text-white">{item.cases}</td>
                     <td className="px-4 py-3.5 text-emerald-300 font-medium">{item.topIssue}</td>
                     <td className="px-4 py-3.5">
@@ -804,7 +947,7 @@ export default function HotspotsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-xs font-mono text-slate-300">
-                      {item.radiusKm || '3.0'} km buffer
+                      {item.radiusKm || '3.0'} {text.kmBuffer}
                     </td>
                     <td className="px-4 py-3.5 text-xs text-slate-300 max-w-sm truncate">{item.action}</td>
                   </tr>

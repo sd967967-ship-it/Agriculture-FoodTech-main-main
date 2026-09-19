@@ -11,11 +11,25 @@ const copy = {
       ['PM Fasal Bima Yojana', 'Crop insurance support against covered natural risks.', 'https://pmfby.gov.in/'],
       ['Soil Health Card', 'Soil testing and nutrient recommendations for your field.', 'https://soilhealth.dac.gov.in/'],
     ],
+    pestBadge: '🪤 NEW FEATURE',
+    pestBannerTitle: 'Pest & Trap Count Surveillance',
+    pestBannerDesc: 'Record manual trap readings and field sweep counts to track regional pest pressure in real time.',
+    pestBannerBtn: 'Open Pest Logger →',
   },
   bn: {
-    eyebrow: 'কৃষি সরঞ্জাম', title: 'আজকের সিদ্ধান্তে কাজে লাগে এমন সরঞ্জাম', intro: 'রোগের ইতিহাস রাখুন, সেচের পরিকল্পনা করুন, সরকারি প্রকল্প বুঝুন এবং লাভ হিসাব করুন।', history: 'পোকা ও রোগের ইতিহাস', historyCopy: 'কী দেখেছেন ও কী ব্যবস্থা নিয়েছেন লিখে রাখুন।', crop: 'ফসল', issue: 'সমস্যা বা লক্ষণ', date: 'তারিখ', action: 'গৃহীত ব্যবস্থা', save: 'রেকর্ড সংরক্ষণ', saved: 'সংরক্ষিত রেকর্ড', remove: 'মুছুন', empty: 'এখনও কোনো রেকর্ড নেই।', irrigation: 'সেচ পরিকল্পনা', irrigationCopy: 'ফসল, মাটি ও পরের সেচের তারিখ অনুযায়ী সহজ অনুস্মারক।', soil: 'মাটির ধরন', nextWater: 'পরের সেচের তারিখ', frequency: 'ব্যবধান (দিন)', schedule: 'পরিকল্পনা সংরক্ষণ', scheduleSaved: 'এই ডিভাইসে সেচের পরিকল্পনা সংরক্ষিত হয়েছে।', schemes: 'সরকারি প্রকল্প খুঁজুন', schemesCopy: 'সরকারি পোর্টাল দেখুন এবং স্থানীয় কৃষি দপ্তরে যোগ্যতা যাচাই করুন।', all: 'সব ফসল', open: 'সরকারি পোর্টাল খুলুন', profit: 'ফসলের লাভের হিসাব', soilOptions: ['দোআঁশ', 'এঁটেল', 'বেলে', 'ল্যাটেরাইট'], schemeCrop: 'ফসল বা প্রয়োজন', schemesFor: 'যার জন্য প্রকল্প দেখানো হচ্ছে', general: 'সাধারণ কৃষি', schemesList: [['পিএম-কিষাণ', 'যোগ্য কৃষক পরিবারের জন্য আয় সহায়তা।', 'https://pmkisan.gov.in/'], ['ফসল বিমা যোজনা', 'প্রাকৃতিক ঝুঁকির বিরুদ্ধে ফসল বিমা সহায়তা।', 'https://pmfby.gov.in/'], ['মাটি স্বাস্থ্য কার্ড', 'মাটি পরীক্ষা ও পুষ্টির পরামর্শ।', 'https://soilhealth.dac.gov.in/']]},
+    eyebrow: 'কৃষি সরঞ্জাম', title: 'আজকের সিদ্ধান্তে কাজে লাগে এমন সরঞ্জাম', intro: 'রোগের ইতিহাস রাখুন, সেচের পরিকল্পনা করুন, সরকারি প্রকল্প বুঝুন এবং লাভ হিসাব করুন।', history: 'পোকা ও রোগের ইতিহাস', historyCopy: 'কী দেখেছেন ও কী ব্যবস্থা নিয়েছেন লিখে রাখুন।', crop: 'ফসল', issue: 'সমস্যা বা লক্ষণ', date: 'তারিখ', action: 'গৃহীত ব্যবস্থা', save: 'রেকর্ড সংরক্ষণ', saved: 'সংরক্ষিত রেকর্ড', remove: 'মুছুন', empty: 'এখনও কোনো রেকর্ড নেই।', irrigation: 'সেচ পরিকল্পনা', irrigationCopy: 'ফসল, মাটি ও পরের সেচের তারিখ অনুযায়ী সহজ অনুস্মারক।', soil: 'মাটির ধরন', nextWater: 'পরের সেচের তারিখ', frequency: 'ব্যবধান (দিন)', schedule: 'পরিকল্পনা সংরক্ষণ', scheduleSaved: 'এই ডিভাইসে সেচের পরিকল্পনা সংরক্ষিত হয়েছে।', schemes: 'সরকারি প্রকল্প খুঁজুন', schemesCopy: 'সরকারি পোর্টাল দেখুন এবং স্থানীয় কৃষি দপ্তরে যোগ্যতা যাচাই করুন।', all: 'সব ফসল', open: 'সরকারি পোর্টাল খুলুন', profit: 'ফসলের লাভের হিসাব', soilOptions: ['দোআঁশ', 'এঁটেল', 'বেলে', 'ল্যাটেরাইট'], schemeCrop: 'ফসল বা প্রয়োজন', schemesFor: 'যার জন্য প্রকল্প দেখানো হচ্ছে', general: 'সাধারণ কৃষি', schemesList: [['পিএম-কিষাণ', 'যোগ্য কৃষক পরিবারের জন্য আয় সহায়তা।', 'https://pmkisan.gov.in/'], ['ফসল বিমা যোজনা', 'প্রাকৃতিক ঝুঁকির বিরুদ্ধে ফসল বিমা সহায়তা।', 'https://pmfby.gov.in/'], ['মাটি স্বাস্থ্য কার্ড', 'মাটি পরীক্ষা ও পুষ্টির পরামর্শ।', 'https://soilhealth.dac.gov.in/']],
+    pestBadge: '🪤 নতুন ফিচার',
+    pestBannerTitle: 'পোকা ও ফাঁদের নজরদারি',
+    pestBannerDesc: 'ম্যানুয়াল ফাঁদের গণনা এবং মাঠের পোকার চাপ ট্র্যাক করতে তথ্য নথিভুক্ত করুন।',
+    pestBannerBtn: 'কীটপতঙ্গ লগ খুলুন →',
+  },
   hi: {
-    eyebrow: 'कृषि उपकरण', title: 'आज के फैसलों के लिए उपयोगी उपकरण', intro: 'रोग का इतिहास रखें, सिंचाई की योजना बनाएं, सरकारी योजनाएं समझें और लाभ का अनुमान लगाएं।', history: 'कीट और रोग इतिहास', historyCopy: 'जो देखा और जो उपचार किया, उसे दर्ज करें।', crop: 'फसल', issue: 'समस्या या लक्षण', date: 'तारीख', action: 'किया गया उपचार', save: 'रिकॉर्ड सहेजें', saved: 'सहेजे रिकॉर्ड', remove: 'हटाएं', empty: 'अभी कोई रिकॉर्ड नहीं है।', irrigation: 'सिंचाई शेड्यूल', irrigationCopy: 'फसल, मिट्टी और अगली सिंचाई की तारीख के आधार पर सरल रिमाइंडर।', soil: 'मिट्टी का प्रकार', nextWater: 'अगली सिंचाई तारीख', frequency: 'अंतर (दिन)', schedule: 'शेड्यूल सहेजें', scheduleSaved: 'सिंचाई शेड्यूल इस डिवाइस पर सहेजा गया है।', schemes: 'सरकारी योजना खोजें', schemesCopy: 'आधिकारिक पोर्टल देखें और स्थानीय कृषि कार्यालय से पात्रता जांचें।', all: 'सभी फसलें', open: 'आधिकारिक पोर्टल खोलें', profit: 'फसल लाभ कैलकुलेटर', soilOptions: ['दोमट', 'चिकनी', 'बलुई', 'लैटेराइट'], schemeCrop: 'फसल या जरूरत', schemesFor: 'योजनाएं दिखाई जा रही हैं', general: 'सामान्य खेती', schemesList: [['पीएम-किसान', 'पात्र किसान परिवारों के लिए आय सहायता।', 'https://pmkisan.gov.in/'], ['प्रधानमंत्री फसल बीमा योजना', 'प्राकृतिक जोखिमों से फसल बीमा सहायता।', 'https://pmfby.gov.in/'], ['मृदा स्वास्थ्य कार्ड', 'मिट्टी जांच और पोषक तत्वों की सलाह।', 'https://soilhealth.dac.gov.in/']]},
+    eyebrow: 'कृषि उपकरण', title: 'आज के फैसलों के लिए उपयोगी उपकरण', intro: 'रोग का इतिहास रखें, सिंचाई की योजना बनाएं, सरकारी योजनाएं समझें और लाभ का अनुमान लगाएं।', history: 'कीट और रोग इतिहास', historyCopy: 'जो देखा और जो उपचार किया, उसे दर्ज करें।', crop: 'फसल', issue: 'समस्या या लक्षण', date: 'तारीख', action: 'किया गया उपचार', save: 'रिकॉर्ड सहेजें', saved: 'सहेजे रिकॉर्ड', remove: 'हटाएं', empty: 'अभी कोई रिकॉर्ड नहीं है।', irrigation: 'सिंचाई शेड्यूल', irrigationCopy: 'फसल, मिट्टी और अगली सिंचाई की तारीख के आधार पर सरल रिमाइंडर।', soil: 'मिट्टी का प्रकार', nextWater: 'अगली सिंचाई तारीख', frequency: 'अंतर (दिन)', schedule: 'शेड्यूल सहेजें', scheduleSaved: 'सिंचाई शेड्यूल इस डिवाइस पर सहेजा गया है।', schemes: 'सरकारी योजना खोजें', schemesCopy: 'आधिकारिक पोर्टल देखें और स्थानीय कृषि कार्यालय से पात्रता जांचें।', all: 'सभी फसलें', open: 'आधिकारिक पोर्टल खोलें', profit: 'फसल लाभ कैलकुलेटर', soilOptions: ['दोमट', 'चिकनी', 'बलुई', 'लैटेराइट'], schemeCrop: 'फसल या जरूरत', schemesFor: 'योजनाएं दिखाई जा रही हैं', general: 'सामान्य खेती', schemesList: [['पीएम-किसान', 'पात्र किसान परिवारों के लिए आय सहायता।', 'https://pmkisan.gov.in/'], ['प्रधानमंत्री फसल बीमा योजना', 'प्राकृतिक जोखिमों से फसल बीमा सहायता।', 'https://pmfby.gov.in/'], ['मृदा स्वास्थ्य कार्ड', 'मिट्टी जांच और पोषक तत्वों की सलाह।', 'https://soilhealth.dac.gov.in/']],
+    pestBadge: '🪤 नई सुविधा',
+    pestBannerTitle: 'कीट व जाल गणना निगरानी',
+    pestBannerDesc: 'क्षेत्रीय कीट दबाव को वास्तविक समय में ट्रैक करने के लिए जाल गणना दर्ज करें।',
+    pestBannerBtn: 'कीट लॉगर खोलें →',
+  },
 };
 
 const crops = ['Rice', 'Potato', 'Jute', 'Mustard', 'Tea', 'Tomato', 'Brinjal', 'Chilli', 'Mango', 'Wheat', 'Maize'];
@@ -96,20 +110,20 @@ export default function ToolsPage() {
     <div className="mb-8 overflow-hidden rounded-2xl border border-lime-400/30 bg-gradient-to-r from-emerald-950/80 via-emerald-900/60 to-[#071d17] p-6 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-400/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-lime-300">
-          🪤 NEW FEATURE
+          {text.pestBadge}
         </span>
         <h2 className="mt-2 text-xl font-bold text-white">
-          Pest &amp; Trap Count Surveillance
+          {text.pestBannerTitle}
         </h2>
         <p className="mt-1 text-sm text-emerald-200/80">
-          Record manual trap readings and field sweep counts to track regional pest pressure in real time.
+          {text.pestBannerDesc}
         </p>
       </div>
       <Link
         to="/pest-log"
         className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-bold text-emerald-950 shadow-md hover:bg-lime-300 transition-colors whitespace-nowrap"
       >
-        Open Pest Logger →
+        {text.pestBannerBtn}
       </Link>
     </div>
     <div className="grid gap-6 lg:grid-cols-2">

@@ -14,12 +14,14 @@ const copy = {
     manualFarmId: 'Or enter custom Farm ID',
     noFarmsFound: 'No farms found (defaulting to Farm #1)',
     pestLabel: 'Pest Species / Type',
-    customPestPlaceholder: 'Or enter other pest name...',
+    customPestPlaceholder: 'Or enter custom / other pest name...',
     countLabel: 'Trap Count (Observed Pests)',
     countHint: 'Enter the total count of insects caught in the trap or found per sweep.',
     sourceLabel: 'Observation Source',
     sourceManual: 'Manual Trap / Inspection',
     sourceSensor: 'Automated Trap / Sensor',
+    sourceManualBadge: 'Manual',
+    sourceSensorBadge: 'Sensor',
     timestampLabel: 'Date & Time',
     notesLabel: 'Trap Type / Field Notes (Optional)',
     notesPlaceholder: 'e.g., Yellow sticky trap in North plot, pheromone trap #2...',
@@ -42,10 +44,16 @@ const copy = {
     pressureLow: 'Low',
     pressureMed: 'Moderate',
     pressureHigh: 'High Alert',
+    farmPrefix: 'Farm #',
+    validationFarmId: 'Please provide a valid Farm ID.',
+    validationPest: 'Please select or enter a pest type.',
+    validationCount: 'Count cannot be negative.',
+    loadingRecords: 'Loading records...',
+    recordedOn: 'on'
   },
   bn: {
     badge: 'কীটপতঙ্গ ও ফাঁদ পর্যবেক্ষণ',
-    title: 'কীটপতঙ্গ ও ফাঁদের সংখ্যা লগ করুন',
+    title: 'কীটপতঙ্গ ও ফাঁদের সংখ্যা নথিভুক্ত করুন',
     subtitle: 'ক্ষেতের ফাঁদের সংখ্যা এবং পোকা পর্যবেক্ষণের হিসাব রাখুন যাতে দ্রুত প্রাদুর্ভাব শনাক্ত করা যায়।',
     formTitle: 'হাতে-কলমে ফাঁদ / ক্ষেতের তথ্য নথিভুক্তি',
     formDesc: 'কৃষক বা কৃষি সম্প্রসারণ কর্মীদের সংগ্রহ করা ফাঁদের তথ্য জমা দিন।',
@@ -57,12 +65,14 @@ const copy = {
     customPestPlaceholder: 'অন্য পোকার নাম লিখুন...',
     countLabel: 'ফাঁদে ধরা পোকার সংখ্যা',
     countHint: 'ফাঁদে আটক পোকার মোট সংখ্যা লিখুন।',
-    sourceLabel: 'উৎস',
-    sourceManual: 'হাতে পর্যবেক্ষণ',
-    sourceSensor: 'স্বয়ংক্রিয় সেন্সর',
+    sourceLabel: 'পর্যবেক্ষণ উৎস',
+    sourceManual: 'হাতে পর্যবেক্ষণ / পরিদর্শন',
+    sourceSensor: 'স্বয়ংক্রিয় সেন্সর / ফাঁদ',
+    sourceManualBadge: 'ম্যানুয়াল',
+    sourceSensorBadge: 'সেন্সর',
     timestampLabel: 'তারিখ ও সময়',
     notesLabel: 'ফাঁদের ধরন / মন্তব্য (ঐচ্ছিক)',
-    notesPlaceholder: 'যেমন: হলুদ আঠালো ফাঁদ, ফেরোমন ফাঁদ...',
+    notesPlaceholder: 'যেমন: উত্তর প্লটে হলুদ আঠালো ফাঁদ, ফেরোমন ফাঁদ...',
     submitBtn: 'পর্যবেক্ষণ সংরক্ষণ করুন',
     submitting: 'সংরক্ষণ করা হচ্ছে...',
     successMsg: 'কীটপতঙ্গের তথ্য সফলভাবে সংরক্ষিত হয়েছে!',
@@ -82,6 +92,12 @@ const copy = {
     pressureLow: 'স্বাভাবিক',
     pressureMed: 'মাঝারি',
     pressureHigh: 'উচ্চ সতর্কতা',
+    farmPrefix: 'খামার #',
+    validationFarmId: 'সঠিক খামার আইডি প্রদান করুন।',
+    validationPest: 'পোকার ধরন নির্বাচন করুন বা নাম লিখুন।',
+    validationCount: 'গণনার সংখ্যা ঋণাত্মক হতে পারে না।',
+    loadingRecords: 'রেকর্ড লোড হচ্ছে...',
+    recordedOn: '-এ'
   },
   hi: {
     badge: 'कीट एवं ट्रैप निगरानी',
@@ -100,6 +116,8 @@ const copy = {
     sourceLabel: 'अवलोकन का स्रोत',
     sourceManual: 'मैनुअल ट्रैप / निरीक्षण',
     sourceSensor: 'सेंसर / ऑटोमेटेड',
+    sourceManualBadge: 'मैनुअल',
+    sourceSensorBadge: 'सेंसर',
     timestampLabel: 'दिनांक व समय',
     notesLabel: 'ट्रैप का प्रकार / टिप्पणी (वैकल्पिक)',
     notesPlaceholder: 'जैसे: पीला स्टिकी ट्रैप, फेरोमोन ट्रैप...',
@@ -122,20 +140,26 @@ const copy = {
     pressureLow: 'सामान्य',
     pressureMed: 'मध्यम',
     pressureHigh: 'उच्च चेतावनी',
+    farmPrefix: 'खेत #',
+    validationFarmId: 'कृपया एक मान्य खेत आईडी दर्ज करें।',
+    validationPest: 'कृपया कीट का प्रकार चुनें या नाम दर्ज करें।',
+    validationCount: 'संख्या शून्य से कम नहीं हो सकती।',
+    loadingRecords: 'रिकॉर्ड लोड हो रहे हैं...',
+    recordedOn: 'पर'
   },
 };
 
-const COMMON_PESTS = [
-  'Fall Armyworm',
-  'Yellow Stem Borer',
-  'Aphids',
-  'Whitefly',
-  'Fruit & Shoot Borer',
-  'Brown Planthopper',
-  'Thrips',
-  'Termites',
-  'Cutworm',
-  'Leafhopper',
+const COMMON_PEST_LIST = [
+  { id: 'Fall Armyworm', en: 'Fall Armyworm', bn: 'ফল আর্মিওয়ার্ম', hi: 'फॉल आर्मीवॉर्म' },
+  { id: 'Yellow Stem Borer', en: 'Yellow Stem Borer', bn: 'হলুদ মাজরা পোকা', hi: 'पीला तना छेदक' },
+  { id: 'Aphids', en: 'Aphids', bn: 'জাব পোকা', hi: 'माहू (एफिड्स)' },
+  { id: 'Whitefly', en: 'Whitefly', bn: 'সাদা মাছি', hi: 'सफेद मक्खी' },
+  { id: 'Fruit & Shoot Borer', en: 'Fruit & Shoot Borer', bn: 'ডগা ও ফল ছিদ্রকারী', hi: 'फल एवं तना छेदक' },
+  { id: 'Brown Planthopper', en: 'Brown Planthopper', bn: 'বাদামি ঘাসফড়িং (BPH)', hi: 'भूरा फुदका (BPH)' },
+  { id: 'Thrips', en: 'Thrips', bn: 'থ্রিপস', hi: 'थ्रिप्स' },
+  { id: 'Termites', en: 'Termites', bn: 'উইপোকা', hi: 'दीमक' },
+  { id: 'Cutworm', en: 'Cutworm', bn: 'কাটুই পোকা', hi: 'कटवर्म' },
+  { id: 'Leafhopper', en: 'Leafhopper', bn: 'পাতা ফড়িং', hi: 'पत्ती फुदका' },
 ];
 
 export default function PestLogPage() {
@@ -193,6 +217,17 @@ export default function PestLogPage() {
 
   const activePestName = customPest.trim() || pestType;
 
+  const getLocalizedPestName = (name) => {
+    if (!name) return '';
+    const match = COMMON_PEST_LIST.find(
+      (p) => p.id.toLowerCase() === name.toLowerCase() || p.en.toLowerCase() === name.toLowerCase()
+    );
+    if (match) {
+      return match[language] || match.en;
+    }
+    return name;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback(null);
@@ -201,17 +236,17 @@ export default function PestLogPage() {
     const numericFarmId = parseInt(selectedFarmId, 10);
 
     if (isNaN(numericFarmId) || numericFarmId <= 0) {
-      setFeedback({ type: 'error', message: 'Please provide a valid Farm ID.' });
+      setFeedback({ type: 'error', message: t.validationFarmId });
       return;
     }
 
     if (!activePestName.trim()) {
-      setFeedback({ type: 'error', message: 'Please select or enter a pest type.' });
+      setFeedback({ type: 'error', message: t.validationPest });
       return;
     }
 
     if (isNaN(numericCount) || numericCount < 0) {
-      setFeedback({ type: 'error', message: 'Count cannot be negative.' });
+      setFeedback({ type: 'error', message: t.validationCount });
       return;
     }
 
@@ -235,9 +270,10 @@ export default function PestLogPage() {
     setSubmitting(true);
     try {
       await createPestObservation(payload);
+      const localizedName = getLocalizedPestName(activePestName);
       setFeedback({
         type: 'success',
-        message: `${t.successMsg} (${activePestName}: ${numericCount} on Farm #${numericFarmId})`,
+        message: `${t.successMsg} (${localizedName}: ${numericCount} ${t.recordedOn} ${t.farmPrefix}${numericFarmId})`,
       });
       // Reset some fields
       setCustomPest('');
@@ -278,8 +314,23 @@ export default function PestLogPage() {
     );
   };
 
+  const formatRecordDate = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      const locale = language === 'bn' ? 'bn-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
+      return new Date(dateStr).toLocaleString(locale, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 text-slate-100">
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-[#0a231c]/90 via-[#0d2f25]/85 to-[#061712]/95 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
@@ -342,7 +393,7 @@ export default function PestLogPage() {
                   >
                     {farms.map((f) => (
                       <option key={f.id} value={f.id}>
-                        {f.name} (ID #{f.id}) — {f.district || 'West Bengal'}
+                        {f.name} ({t.farmPrefix}{f.id}) — {f.district || 'West Bengal'}
                       </option>
                     ))}
                   </select>
@@ -358,20 +409,20 @@ export default function PestLogPage() {
                 )}
               </div>
 
-              {/* Pest Type */}
+              {/* Pest Type with Localized Badges */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-emerald-300 mb-1.5">
                   {t.pestLabel}
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {COMMON_PESTS.slice(0, 6).map((pest) => {
-                    const isSelected = pestType === pest && !customPest;
+                  {COMMON_PEST_LIST.slice(0, 6).map((item) => {
+                    const isSelected = (pestType === item.id || pestType === item.en) && !customPest;
                     return (
                       <button
                         type="button"
-                        key={pest}
+                        key={item.id}
                         onClick={() => {
-                          setPestType(pest);
+                          setPestType(item.id);
                           setCustomPest('');
                         }}
                         className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
@@ -380,7 +431,7 @@ export default function PestLogPage() {
                             : 'bg-emerald-900/40 text-emerald-200 hover:bg-emerald-800/50 border border-emerald-700/30'
                         }`}
                       >
-                        {pest}
+                        {item[language] || item.en}
                       </button>
                     );
                   })}
@@ -522,7 +573,7 @@ export default function PestLogPage() {
                   <option value="">{t.filterAll}</option>
                   {farms.map((f) => (
                     <option key={f.id} value={f.id}>
-                      Farm #{f.id} ({f.name})
+                      {t.farmPrefix}{f.id} ({f.name})
                     </option>
                   ))}
                 </select>
@@ -543,7 +594,7 @@ export default function PestLogPage() {
                 <div className="rounded-xl border border-dashed border-emerald-700/30 bg-[#071914]/60 p-8 text-center">
                   <span className="text-3xl">📭</span>
                   <p className="mt-2 text-sm text-emerald-200/70">
-                    {loadingHistory ? 'Loading records...' : t.noHistory}
+                    {loadingHistory ? t.loadingRecords : t.noHistory}
                   </p>
                 </div>
               ) : (
@@ -566,7 +617,7 @@ export default function PestLogPage() {
                             #{obs.farmId}
                           </td>
                           <td className="py-3 px-2 font-semibold text-white">
-                            {obs.pestType}
+                            {getLocalizedPestName(obs.pestType)}
                           </td>
                           <td className="py-3 px-2 font-mono text-base font-bold text-lime-300">
                             {obs.count}
@@ -582,18 +633,11 @@ export default function PestLogPage() {
                                   : 'bg-emerald-800/40 text-emerald-300 border border-emerald-700/30'
                               }`}
                             >
-                              {obs.source === 'sensor' ? '📡 Sensor' : '🖐️ Manual'}
+                              {obs.source === 'sensor' ? `📡 ${t.sourceSensorBadge}` : `🖐️ ${t.sourceManualBadge}`}
                             </span>
                           </td>
                           <td className="py-3 pl-2 text-right font-mono text-xs text-emerald-200/60 whitespace-nowrap">
-                            {obs.timestamp
-                              ? new Date(obs.timestamp).toLocaleString(undefined, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })
-                              : '—'}
+                            {formatRecordDate(obs.timestamp)}
                           </td>
                         </tr>
                       ))}

@@ -23,6 +23,21 @@ const textContent = {
     approve: 'Approve Advisory',
     assign: 'Assign KVK Officer',
     approvedToast: 'Advisory approved and dispatched to farmer via SMS & App notification.',
+    exportCsv: '📥 Export CSV Report',
+    kpiHotspotsSub: 'High severity clusters (14d)',
+    kpiReviewsSub: 'Escalated KVK laboratory queue',
+    kpiComplianceSub: '7-day follow-up field check-ins',
+    kpiSurveillanceSub: 'Monitored agricultural holdings',
+    legendBlight: 'Blight',
+    legendBlast: 'Blast',
+    legendAphid: 'Aphid',
+    incidents: 'incidents',
+    legendDiagnoses: 'Diagnoses',
+    legendTraps: 'Trap Counts',
+    pendingItems: 'pending items',
+    allReviewed: 'All expert escalations and laboratory referrals have been reviewed and dispatched.',
+    colDistrict: 'District',
+    colTotal: 'Total',
   },
   bn: {
     eyebrow: 'কৃষি আধিকারিক পোর্টাল',
@@ -44,6 +59,21 @@ const textContent = {
     approve: 'পরামর্শ অনুমোদন',
     assign: 'KVK অফিসার নিয়োগ',
     approvedToast: 'পরামর্শ অনুমোদিত হয়েছে এবং এসএমএস ও অ্যাপের মাধ্যমে পাঠানো হয়েছে।',
+    exportCsv: '📥 CSV রিপোর্ট ডাউনলোড',
+    kpiHotspotsSub: 'উচ্চ ঝুঁকির ক্লাস্টার (১৪ দিন)',
+    kpiReviewsSub: 'কেভিকে ল্যাবরেটরি পর্যালোচনা সারি',
+    kpiComplianceSub: '৭ দিনের ফলো-আপ ক্ষেত্র পরিদর্শন',
+    kpiSurveillanceSub: 'নজরদারির আওতাধীন কৃষি খামার',
+    legendBlight: 'ব্লাইট / ধ্বসা',
+    legendBlast: 'ব্লাস্ট',
+    legendAphid: 'জাবপোকা',
+    incidents: 'টি ঘটনা',
+    legendDiagnoses: 'রোগ নির্ণয়',
+    legendTraps: 'ফাঁদের সংখ্যা',
+    pendingItems: 'টি অপেক্ষমান',
+    allReviewed: 'সকল বিশেষজ্ঞ পর্যালোচনা ও ল্যাব রেফারেল সম্পন্ন ও পাঠানো হয়েছে।',
+    colDistrict: 'জেলা',
+    colTotal: 'মোট',
   },
   hi: {
     eyebrow: 'कृषि अधिकारी पोर्टल',
@@ -65,6 +95,21 @@ const textContent = {
     approve: 'सलाह स्वीकृत करें',
     assign: 'केवीके अधिकारी सौंपें',
     approvedToast: 'सलाह स्वीकृत की गई और एसएमएस तथा ऐप सूचना द्वारा भेजी गई।',
+    exportCsv: '📥 सीएसवी रिपोर्ट डाउनलोड',
+    kpiHotspotsSub: 'उच्च जोखिम वाले क्लस्टर (14 दिन)',
+    kpiReviewsSub: 'केवीके प्रयोगशाला समीक्षा कतार',
+    kpiComplianceSub: '7-दिवसीय फॉलो-अप निरीक्षण',
+    kpiSurveillanceSub: 'निगरानी में पंजीकृत खेत',
+    legendBlight: 'झुलसा रोग',
+    legendBlast: 'ब्लास्ट रोग',
+    legendAphid: 'माहू / एफिड',
+    incidents: 'घटनाएं',
+    legendDiagnoses: 'रोग निदान',
+    legendTraps: 'जाल गणना',
+    pendingItems: 'लंबित मामले',
+    allReviewed: 'सभी विशेषज्ञ समीक्षाएं और प्रयोगशाला रेफरल संसाधित और प्रेषित कर दिए गए हैं।',
+    colDistrict: 'ज़िला',
+    colTotal: 'कुल',
   },
 };
 
@@ -135,7 +180,13 @@ export default function OfficialDashboard() {
   };
 
   const handleExportCSV = () => {
-    const headers = ['District', 'Blight Incidents', 'Blast Incidents', 'Aphid Incidents', 'Total'];
+    const headers = [
+      text.colDistrict || 'District',
+      `${text.legendBlight || 'Blight'} ${text.incidents || 'incidents'}`,
+      `${text.legendBlast || 'Blast'} ${text.incidents || 'incidents'}`,
+      `${text.legendAphid || 'Aphid'} ${text.incidents || 'incidents'}`,
+      text.colTotal || 'Total'
+    ];
     const rows = DISTRICT_DATA.map((d) => [d.district, d.Blight, d.Blast, d.Aphid, d.Total]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -166,7 +217,7 @@ export default function OfficialDashboard() {
           onClick={handleExportCSV}
           className="rounded-xl border border-emerald-500/40 bg-emerald-950/80 hover:bg-emerald-900 px-4 py-2.5 text-sm font-bold text-emerald-200 shadow-lg backdrop-blur-md transition-colors whitespace-nowrap self-start sm:self-auto flex items-center gap-2"
         >
-          📥 Export CSV Report
+          {text.exportCsv}
         </button>
       </header>
 
@@ -186,7 +237,7 @@ export default function OfficialDashboard() {
             <span className="text-2xl">🔥</span>
           </div>
           <p className="mt-3 text-3xl font-black text-white">{summary?.activeHotspots ?? MOCK_SUMMARY.activeHotspots}</p>
-          <p className="mt-1 text-xs text-slate-400">High severity clusters (14d)</p>
+          <p className="mt-1 text-xs text-slate-400">{text.kpiHotspotsSub}</p>
         </div>
 
         <div className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-950/40 to-[#141006] p-5 shadow-xl">
@@ -195,7 +246,7 @@ export default function OfficialDashboard() {
             <span className="text-2xl">👨‍🔬</span>
           </div>
           <p className="mt-3 text-3xl font-black text-white">{reviews.length}</p>
-          <p className="mt-1 text-xs text-slate-400">Escalated KVK laboratory queue</p>
+          <p className="mt-1 text-xs text-slate-400">{text.kpiReviewsSub}</p>
         </div>
 
         <div className="rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 to-[#071b14] p-5 shadow-xl">
@@ -204,7 +255,7 @@ export default function OfficialDashboard() {
             <span className="text-2xl">🎯</span>
           </div>
           <p className="mt-3 text-3xl font-black text-white">{summary?.complianceRate ?? MOCK_SUMMARY.complianceRate}%</p>
-          <p className="mt-1 text-xs text-slate-400">7-day follow-up field check-ins</p>
+          <p className="mt-1 text-xs text-slate-400">{text.kpiComplianceSub}</p>
         </div>
 
         <div className="rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-950/40 to-[#07161c] p-5 shadow-xl">
@@ -213,7 +264,7 @@ export default function OfficialDashboard() {
             <span className="text-2xl">🌾</span>
           </div>
           <p className="mt-3 text-3xl font-black text-white">{summary?.farmCount ?? MOCK_SUMMARY.farmCount}</p>
-          <p className="mt-1 text-xs text-slate-400">Monitored agricultural holdings</p>
+          <p className="mt-1 text-xs text-slate-400">{text.kpiSurveillanceSub}</p>
         </div>
       </div>
 
@@ -224,9 +275,9 @@ export default function OfficialDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-white">{text.chartDistrictTitle}</h3>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Blight</span>
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> Blast</span>
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Aphid</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> {text.legendBlight}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> {text.legendBlast}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> {text.legendAphid}</span>
             </div>
           </div>
           <div className="space-y-4">
@@ -234,7 +285,7 @@ export default function OfficialDashboard() {
               <div key={item.district} className="space-y-1">
                 <div className="flex justify-between text-xs font-bold text-slate-300">
                   <span>{item.district}</span>
-                  <span>{item.Total} incidents</span>
+                  <span>{item.Total} {text.incidents}</span>
                 </div>
                 <div className="flex h-4 w-full overflow-hidden rounded-full bg-slate-900">
                   <div style={{ width: `${(item.Blight / 40) * 100}%` }} className="bg-red-500 transition-all" title={`Blight: ${item.Blight}`} />
@@ -251,8 +302,8 @@ export default function OfficialDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-white">{text.chartTrendTitle}</h3>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> Diagnoses</span>
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-lime-400" /> Trap Counts</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> {text.legendDiagnoses}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-lime-400" /> {text.legendTraps}</span>
             </div>
           </div>
           <div className="relative w-full h-56 flex items-end justify-between pt-6 border-b border-slate-800 gap-2">
@@ -274,7 +325,7 @@ export default function OfficialDashboard() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">{text.reviewQueueTitle}</h3>
           <span className="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300">
-            {reviews.length} pending items
+            {reviews.length} {text.pendingItems}
           </span>
         </div>
 
@@ -294,7 +345,7 @@ export default function OfficialDashboard() {
               {reviews.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-slate-400 italic">
-                    All expert escalations and laboratory referrals have been reviewed and dispatched.
+                    {text.allReviewed}
                   </td>
                 </tr>
               ) : (
