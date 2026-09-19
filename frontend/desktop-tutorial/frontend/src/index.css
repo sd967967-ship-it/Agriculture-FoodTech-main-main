@@ -281,3 +281,106 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline: 3px solid rgba(42, 127, 84, 0.45);
   outline-offset: 3px;
 }
+
+/* ── Leaflet Map Enhancements & Fixes ──────────────────────── */
+.leaflet-container {
+  font-family: inherit !important;
+  background-color: #081510 !important;
+  outline: none;
+}
+
+/* Prevent global button/a transforms and transitions from breaking Leaflet zoom */
+.leaflet-container a,
+.leaflet-control-zoom a {
+  transform: none !important;
+  transition: background-color 150ms ease, color 150ms ease !important;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: #0d231a !important;
+  color: #6ee7b7 !important;
+  border-bottom: 1px solid rgba(52, 211, 153, 0.2) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #174232 !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-zoom a.leaflet-disabled {
+  background-color: #06120d !important;
+  color: #4b6358 !important;
+  cursor: not-allowed !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: #0c241b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65) !important;
+  padding: 2px !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.5 !important;
+  font-size: 13px !important;
+}
+
+.leaflet-popup-tip {
+  background-color: #0c241b !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  padding: 6px 8px 0 0 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #ffffff !important;
+}
+
+/* Radar Pulse Animation for High Risk Specific Hotspots */
+@keyframes hotspot-pulse {
+  0% {
+    r: 6;
+    stroke-opacity: 0.9;
+    stroke-width: 2;
+  }
+  70% {
+    r: 22;
+    stroke-opacity: 0;
+    stroke-width: 1;
+  }
+  100% {
+    r: 22;
+    stroke-opacity: 0;
+    stroke-width: 0;
+  }
+}
+
+.hotspot-pulse-circle {
+  animation: hotspot-pulse 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  transform-origin: center;
+  pointer-events: none;
+}
+

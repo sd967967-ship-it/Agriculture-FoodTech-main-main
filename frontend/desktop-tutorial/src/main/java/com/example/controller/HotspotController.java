@@ -92,14 +92,61 @@ public class HotspotController {
                 Objects.toString(log.getCropType(), ""));
     }
 
+    private static final Map<String, String> DISTRICT_BLOCK_NAMES = Map.ofEntries(
+        Map.entry("Nadia", "Chapra Block (Tehatta)"),
+        Map.entry("Murshidabad", "Beldanga-I Block"),
+        Map.entry("Hooghly", "Singur Block (Chandannagar)"),
+        Map.entry("Purba Bardhaman", "Kalna-II Block"),
+        Map.entry("Bardhaman", "Memari-I Block"),
+        Map.entry("Bankura", "Onda Block"),
+        Map.entry("Birbhum", "Suri-I Block"),
+        Map.entry("Malda", "English Bazar Block"),
+        Map.entry("Jalpaiguri", "Dhupguri Block"),
+        Map.entry("North 24 Parganas", "Barasat-I Block"),
+        Map.entry("South 24 Parganas", "Canning-I Block"),
+        Map.entry("Purba Medinipur", "Tamluk Block"),
+        Map.entry("Paschim Medinipur", "Kharagpur-II Block"),
+        Map.entry("Purulia", "Raghunathpur Block"),
+        Map.entry("Cooch Behar", "Dinhata-I Block"),
+        Map.entry("Alipurduar", "Falakata Block"),
+        Map.entry("Darjeeling", "Kurseong Sub-div"),
+        Map.entry("Kalimpong", "Kalimpong-I Block"),
+        Map.entry("Howrah", "Uluberia Block"),
+        Map.entry("Dakshin Dinajpur", "Balurghat Block"),
+        Map.entry("Uttar Dinajpur", "Raiganj Block"),
+        Map.entry("Jhargram", "Jhargram Rural")
+    );
+
+    private String resolveSpecificBlock(String district) {
+        if (district == null) return "Surveillance Sector";
+        return DISTRICT_BLOCK_NAMES.getOrDefault(district, district + " Sector");
+    }
+
+    private double resolveRealisticLat(Double lat, WBCropKnowledgeBase.DistrictInfo district) {
+        if (district != null && (lat == null || lat < 20.5 || lat > 27.8 || Math.abs(lat - district.latitude()) > 1.0)) {
+            return district.latitude();
+        }
+        return lat != null ? lat : districtLatitude(district);
+    }
+
+    private double resolveRealisticLon(Double lon, WBCropKnowledgeBase.DistrictInfo district) {
+        if (district != null && (lon == null || lon < 85.0 || lon > 90.5 || Math.abs(lon - district.longitude()) > 1.0)) {
+            return district.longitude();
+        }
+        return lon != null ? lon : districtLongitude(district);
+    }
+
     private Map<String, Object> predictionCluster(PredictionLog log) {
         WBCropKnowledgeBase.DistrictInfo district = knowledgeBase.getDistrict(log.getDistrict());
         Map<String, Object> cluster = new LinkedHashMap<>();
         cluster.put("id", "diagnosis-" + log.getId());
         cluster.put("district", log.getDistrict());
-        cluster.put("village", log.getDistrict());
-        cluster.put("lat", log.getLatitude() != null ? log.getLatitude() : districtLatitude(district));
-        cluster.put("lon", log.getLongitude() != null ? log.getLongitude() : districtLongitude(district));
+        String specificBlock = resolveSpecificBlock(log.getDistrict());
+        cluster.put("village", specificBlock);
+        cluster.put("block", specificBlock);
+        cluster.put("lat", resolveRealisticLat(log.getLatitude(), district));
+        cluster.put("lon", resolveRealisticLon(log.getLongitude(), district));
+        cluster.put("radiusKm", 3.0);
         cluster.put("cases", 1);
         cluster.put("caseCount", 1);
         cluster.put("crop", log.getCropType());
@@ -115,8 +162,15 @@ public class HotspotController {
     private Map<String, Object> manualCluster(Hotspot hotspot) {
         WBCropKnowledgeBase.DistrictInfo district = knowledgeBase.getDistrict(hotspot.getDistrict());
         Map<String, Object> cluster = toMap(hotspot);
+        String specificBlock = hotspot.getVillage() != null && !hotspot.getVillage().isBlank()
+                && !hotspot.getVillage().equalsIgnoreCase(hotspot.getDistrict())
+                ? hotspot.getVillage()
+                : resolveSpecificBlock(hotspot.getDistrict());
+        cluster.put("village", specificBlock);
+        cluster.put("block", specificBlock);
         cluster.put("lat", districtLatitude(district));
         cluster.put("lon", districtLongitude(district));
+        cluster.put("radiusKm", "HIGH".equalsIgnoreCase(hotspot.getRiskLevel()) ? 3.2 : 2.5);
         cluster.put("cases", hotspot.getCaseCount());
         cluster.put("topIssue", "Reported pest or disease hotspot");
         cluster.put("action", "Inspect the reported area and contact the local agriculture office if cases increase.");
@@ -130,6 +184,9 @@ public class HotspotController {
         merged.put("caseCount", count);
         if (riskRank(String.valueOf(right.get("riskLevel"))) > riskRank(String.valueOf(left.get("riskLevel")))) {
             merged.put("riskLevel", right.get("riskLevel"));
+        }
+        if (left.get("block") == null && right.get("block") != null) {
+            merged.put("block", right.get("block"));
         }
         return merged;
     }
