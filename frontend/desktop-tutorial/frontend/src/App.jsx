@@ -3,6 +3,9 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SkyCanvas, AmbientField, useGlobalTilt, useScrollReveal } from './components/FX';
+import OfflineBanner from './components/OfflineBanner';
+import MobileTabBar from './components/MobileTabBar';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const DiagnosePage = lazy(() => import('./pages/DiagnosePage'));
@@ -11,6 +14,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 const PestLogPage = lazy(() => import('./pages/PestLogPage'));
 const HotspotsPage = lazy(() => import('./pages/HotspotsPage'));
+const KisanMitraPage = lazy(() => import('./pages/KisanMitraPage'));
 const OfficialDashboard = lazy(() => import('./pages/OfficialDashboard'));
 
 export default function App() {
@@ -28,14 +32,20 @@ export default function App() {
 
   const isMobileMode = mode === 'mobile' || (!mode && isSmallScreen);
   const isDesktopMode = mode === 'desktop' || (!mode && !isSmallScreen);
+  useGlobalTilt();
+  useScrollReveal();
 
   return (
     <ErrorBoundary>
+      <AmbientField />
+      <SkyCanvas />
       <div className={`app-shell site-shell flex min-h-screen flex-col soft-grid${isMobileMode ? ' mobile-mode' : ''}${isDesktopMode ? ' desktop-mode' : ''}`}>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <div className="fx-beam" aria-hidden="true" />
         <div className="ambient-glow ambient-glow-one" />
         <div className="ambient-glow ambient-glow-two" />
         <Navbar />
-        <main className="page-enter relative z-10 flex-1">
+        <main id="main-content" className="page-enter relative z-10 flex-1">
           <Suspense fallback={<div className="mx-auto flex min-h-[18rem] max-w-4xl items-center justify-center px-4 text-sm text-emerald-200" role="status">Loading FasalSathi...</div>}>
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -46,6 +56,7 @@ export default function App() {
               <Route path="/pest-log" element={<PestLogPage />} />
               <Route path="/pest-observations" element={<PestLogPage />} />
               <Route path="/hotspots" element={<HotspotsPage />} />
+              <Route path="/kisanmitra" element={<KisanMitraPage />} />
               <Route path="/admin/dashboard" element={<OfficialDashboard />} />
               <Route path="/admin" element={<OfficialDashboard />} />
               <Route path="*" element={<HomePage />} />
@@ -53,6 +64,8 @@ export default function App() {
           </Suspense>
         </main>
         <Footer />
+        <MobileTabBar />
+        <OfflineBanner />
       </div>
     </ErrorBoundary>
   );

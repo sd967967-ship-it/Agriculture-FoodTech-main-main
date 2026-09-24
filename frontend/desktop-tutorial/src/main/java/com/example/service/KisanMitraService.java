@@ -25,6 +25,7 @@ public class KisanMitraService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final UserQueryRepository userQueryRepository;
+    private final MandiUpdates mandiUpdates;
 
     @Value("${kisanmitra.provider:gemini}")
     private String provider;
@@ -46,7 +47,8 @@ public class KisanMitraService {
                              WeatherService weatherService,
                              RestClient.Builder restClientBuilder,
                              ObjectMapper objectMapper,
-                             UserQueryRepository userQueryRepository) {
+                             UserQueryRepository userQueryRepository,
+                             MandiUpdates mandiUpdates) {
         this.knowledgeBase = knowledgeBase;
         this.weatherService = weatherService;
         this.restClient = restClientBuilder
@@ -54,13 +56,22 @@ public class KisanMitraService {
                 .build();
         this.objectMapper = objectMapper;
         this.userQueryRepository = userQueryRepository;
+        this.mandiUpdates = mandiUpdates;
+    }
+
+    public KisanMitraService(WBCropKnowledgeBase knowledgeBase,
+                             WeatherService weatherService,
+                             RestClient.Builder restClientBuilder,
+                             ObjectMapper objectMapper,
+                             UserQueryRepository userQueryRepository) {
+        this(knowledgeBase, weatherService, restClientBuilder, objectMapper, userQueryRepository, null);
     }
 
     public KisanMitraService(WBCropKnowledgeBase knowledgeBase,
                              WeatherService weatherService,
                              RestClient.Builder restClientBuilder,
                              ObjectMapper objectMapper) {
-        this(knowledgeBase, weatherService, restClientBuilder, objectMapper, null);
+        this(knowledgeBase, weatherService, restClientBuilder, objectMapper, null, null);
     }
 
     public KisanMitraChatResponse ask(KisanMitraChatRequest request) {
@@ -127,15 +138,26 @@ public class KisanMitraService {
 
     private String callHostedLlm(String question, String crop, String district, String language) throws Exception {
         String activeProvider = resolveProviderName();
-        String context = buildContextPrompt(crop, district);
-        String prompt = "You are KisanMitra, a multilingual agricultural assistant for Indian farmers. " +
-                "Answer only from the farmer context and the local agronomy guidance provided below. " +
-                "Never invent a pesticide product name, dosage, PHI, REI, or pest-control recommendation. " +
-                "If the information is missing or uncertain, explicitly tell the farmer to check with their local KVK/agriculture office. " +
-                "Use the farmer's language: " + language + ".\n\n" +
-                "Farmer question: " + question + "\n\n" +
-                context + "\n\n" +
-                "Return a helpful, concise answer in plain language for a farmer. Keep it practical and safe.";
+        String context = buildContextPrompt(question, crop, district);
+        String prompt = "You are KisanMitra, a patient agricultural assistant for smallholder farmers in India. "
+                + "Reply in the farmer's language (" + language + "): simple everyday words, short sentences, "
+                + "no jargon. If the farmer writes in Hindi or Bengali, answer in that language.\n"
+                + "Rules:\n"
+                + "1. Give practical step-by-step advice a farmer can do today with locally available inputs.\n"
+                + "2. If crop, location, growth stage, symptoms, or soil/weather details are missing and needed, "
+                + "ask ONE short follow-up question first instead of guessing.\n"
+                + "3. Clearly separate: (a) general farming guidance, (b) AI suggestions that need field verification, "
+                + "(c) anything that must be confirmed by the local KVK or agriculture officer.\n"
+                + "4. For pesticides or chemicals: always add safety steps (protective covering, correct dilution, "
+                + "keep away from children/animals, pre-harvest waiting). Never invent a product name, dosage, "
+                + "pre-harvest interval, or re-entry period. If unsure, say so and refer to the KVK.\n"
+                + "5. Never claim an image diagnosis or recommendation is certain when confidence is low; "
+                + "say what is likely, what else it could be, and what to check next.\n"
+                + "6. Use ONLY the live mandi listings below for prices — never hallucinate a price. "
+                + "If no listing is given, say the price is not available and suggest checking the mandi section.\n\n"
+                + "Farmer question: " + question + "\n\n"
+                + context + "\n\n"
+                + "Answer concisely in plain language for a farmer, numbered steps where it helps.";
 
         return switch (activeProvider) {
             case "gemini" -> callGemini(prompt);
@@ -145,11 +167,72 @@ public class KisanMitraService {
         };
     }
 
-    private String buildContextPrompt(String crop, String district) {
+    private String buildContextPrompt(String question, String crop, String district) {
         String districtContext = district != null && !district.isBlank() ? knowledgeBase.getDistrictContext(district) : "Unknown district; use general West Bengal agronomy and ask the farmer to confirm the district.";
         String cropContext = crop != null && !crop.isBlank() ? "Selected crop: " + crop + "." : "Crop not specified by the farmer.";
-        String weatherContext = "Current context: " + districtContext + " " + cropContext;
-        return weatherContext;
+        StringBuilder context = new StringBuilder();
+        context.append("Current context: ").append(districtContext).append(' ').append(cropContext).append('\n');
+        if (looksLikePriceQuestion(question) && crop != null && !crop.isBlank()) {
+            String prices = livePriceContext(crop, district);
+            if (!prices.isBlank()) {
+                context.append(prices).append('\n');
+            }
+        }
+        String kvk = kvkContext(district);
+        if (!kvk.isBlank()) {
+            context.append(kvk).append('\n');
+        }
+        return context.toString();
+    }
+
+    /** Detects "what is the price/rate of X" style questions (English/Hindi/Bengali). */
+    private boolean looksLikePriceQuestion(String question) {
+        if (question == null) return false;
+        String q = question.toLowerCase(Locale.ROOT);
+        return q.contains("price") || q.contains("rate") || q.contains("mandi")
+                || q.contains("bhav") || q.contains("bazar") || q.contains("bazaar")
+                || q.contains("quintal") || q.contains("sell") || q.contains("dam ")
+                || q.contains("दाम") || q.contains("भाव") || q.contains("দাম") || q.contains("বাজার");
+    }
+
+    /** Live listings from the existing mandi service so the model never invents prices. */
+    private String livePriceContext(String crop, String district) {
+        if (mandiUpdates == null) return "";
+        try {
+            Map<String, Object> data = mandiUpdates.getLivePrices(crop, "West Bengal", district, 5);
+            if (data == null) return "";
+            Object recordsObj = data.get("records");
+            if (!(recordsObj instanceof List<?> records) || records.isEmpty()) return "";
+            String source = String.valueOf(data.getOrDefault("source", "mandi service"));
+            StringBuilder sb = new StringBuilder();
+            sb.append("Live mandi listings for ").append(crop).append(" (").append(source).append("): ");
+            int count = 0;
+            for (Object entry : records) {
+                if (!(entry instanceof Map<?, ?> record) || count >= 5) continue;
+                if (count > 0) sb.append("; ");
+                sb.append(String.valueOf(record.getOrDefault("market", "market")))
+                        .append(": modal Rs.").append(String.valueOf(record.getOrDefault("modalPrice", "?")))
+                        .append("/quintal (range Rs.").append(String.valueOf(record.getOrDefault("minPrice", "?")))
+                        .append("-Rs.").append(String.valueOf(record.getOrDefault("maxPrice", "?")))
+                        .append(", ").append(String.valueOf(record.getOrDefault("date", ""))).append(')');
+                count++;
+            }
+            return count == 0 ? "" : sb.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    /** Nearest KVK contact so the model can point the farmer to a real expert. */
+    private String kvkContext(String district) {
+        try {
+            Map<String, Object> kvk = knowledgeBase.getKvkDetails(district, null, null);
+            if (kvk == null || Boolean.FALSE.equals(kvk.get("available"))) return "";
+            return "Nearest KVK for follow-up: " + kvk.getOrDefault("name", "local KVK")
+                    + ", phone " + kvk.getOrDefault("phone", "1800-180-1551") + ".";
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private String callGemini(String prompt) throws Exception {

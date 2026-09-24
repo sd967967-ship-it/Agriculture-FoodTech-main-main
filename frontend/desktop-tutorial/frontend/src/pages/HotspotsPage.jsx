@@ -147,6 +147,9 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   const [zoomLevel, setZoomLevel] = useState(7.0);
+  // Tracks map readiness so markers/flyTo effects re-run once the async
+  // Leaflet CDN load finishes — whichever resolves first, data or map.
+  const [mapReady, setMapReady] = useState(false);
 
   // Initialize Leaflet map with bounded zoom & navigation
   useEffect(() => {
@@ -169,19 +172,26 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
       .then((L) => {
         if (cancelled || !mapElement.current || mapInstance.current) return;
 
-        // West Bengal geographic bounds: 20.4°N to 27.9°N, 85.0°E to 90.6°E
-        const westBengalBounds = L.latLngBounds(
-          L.latLng(20.3, 84.8),
-          L.latLng(28.0, 90.8)
+        // Eastern-India bounds with a soft edge: farmers can pan freely in every
+        // direction and the view never snaps back while dragging.
+        const softBounds = L.latLngBounds(
+          L.latLng(19.0, 83.0),
+          L.latLng(29.0, 93.0)
         );
 
         const map = L.map(mapElement.current, {
           center: [23.8, 87.85], // Center of West Bengal
           zoom: 7.2,
-          minZoom: 6.2, // Prevents zooming out to outer space / world repetition
-          maxZoom: 16.0, // Allows deep zooming into block roads, canals, & fields
-          maxBounds: westBengalBounds,
-          maxBoundsViscosity: 0.85,
+          minZoom: 6, // Sensible out-limit: region stays readable, no world repetition
+          maxZoom: 16, // Allows deep zooming into block roads, canals, & fields
+          maxBounds: softBounds,
+          maxBoundsViscosity: 0.25, // Gentle edge, no snap-back while panning
+          dragging: true, // Mouse drag (desktop)
+          touchZoom: true, // Pinch + touch drag (mobile)
+          tap: true,
+          doubleClickZoom: true,
+          boxZoom: true,
+          keyboard: true,
           scrollWheelZoom: true,
           wheelPxPerZoomLevel: 90,
           zoomSnap: 0.5,
@@ -205,6 +215,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
 
         map.on('tileerror', onMapError);
         mapInstance.current = map;
+        setMapReady(true);
 
         // Invalidate size once container layout stabilizes
         setTimeout(() => {
@@ -223,6 +234,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
 
     return () => {
       cancelled = true;
+      setMapReady(false);
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
@@ -242,10 +254,10 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
     return () => observer.disconnect();
   }, []);
 
-  // Smooth flyTo when activeCluster changes
+  // Smooth flyTo when activeCluster changes (only once the map exists)
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map || !activeCluster || activeCluster.lat == null || activeCluster.lon == null) return;
+    if (!map || !mapReady || !activeCluster || activeCluster.lat == null || activeCluster.lon == null) return;
 
     const targetLat = Number(activeCluster.lat);
     const targetLon = Number(activeCluster.lon);
@@ -256,13 +268,13 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
       duration: 1.0,
       easeLinearity: 0.25
     });
-  }, [activeCluster]);
+  }, [activeCluster, mapReady]);
 
   // Render high-precision localized hotspot markers and specific containment rings
   useEffect(() => {
     const map = mapInstance.current;
     const L = window.L;
-    if (!map || !L) return;
+    if (!map || !L || !mapReady) return;
 
     // Clear previous layers
     markersRef.current.forEach((layer) => map.removeLayer(layer));
@@ -336,7 +348,7 @@ function LiveHotspotMap({ hotspots, activeCluster, onSelect, onMapError, text = 
 
       markersRef.current.push(containmentRing, epicenterMarker);
     });
-  }, [hotspots, activeCluster, onSelect, text]);
+  }, [hotspots, activeCluster, onSelect, text, mapReady]);
 
   // Quick Action Buttons
   const handleZoomIn = () => {

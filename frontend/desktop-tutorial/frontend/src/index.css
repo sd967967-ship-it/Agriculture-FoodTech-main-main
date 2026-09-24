@@ -38,7 +38,8 @@
       radial-gradient(circle at top left, rgba(39, 116, 77, 0.28), transparent 22rem),
       radial-gradient(circle at top right, rgba(80, 180, 120, 0.12), transparent 20rem),
       linear-gradient(180deg, #020b09 0%, #071915 22%, #0b120f 100%);
-    background-attachment: fixed;
+    /* NOTE: no background-attachment:fixed — it forces a full repaint on
+       every scroll frame and is a classic mobile scroll-jank source. */
     color: var(--text);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -287,6 +288,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-family: inherit !important;
   background-color: #081510 !important;
   outline: none;
+  /* Scope Leaflet's internal z-indexes (panes/controls go up to 1000) so the
+     map layer can never paint above the navbar dropdowns. */
+  isolation: isolate;
 }
 
 /* Prevent global button/a transforms and transitions from breaking Leaflet zoom */
@@ -307,10 +311,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background-color: #0d231a !important;
   color: #6ee7b7 !important;
   border-bottom: 1px solid rgba(52, 211, 153, 0.2) !important;
-  width: 32px !important;
-  height: 32px !important;
-  line-height: 32px !important;
-  font-size: 18px !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 22px !important;
   font-weight: 700 !important;
 }
 
@@ -382,5 +386,312 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   animation: hotspot-pulse 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
   transform-origin: center;
   pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FASALSATHI 3D • LIVE • GRADIENT ENHANCEMENT LAYER (frontend only)
+   Additive: no existing rule above is removed or renamed.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --gold: #fbbf24;
+  --gold-soft: #fde68a;
+  --teal: #2dd4bf;
+  --lime-glow: #bef264;
+  --brand-1: #bef264;
+  --brand-2: #34d399;
+  --brand-3: #2dd4bf;
+  --brand-4: #fbbf24;
+}
+
+/* Richer animated mesh background */
+body {
+  background-image:
+    radial-gradient(38rem 22rem at 8% -4%, rgba(190, 242, 100, 0.16), transparent 60%),
+    radial-gradient(34rem 24rem at 92% 6%, rgba(45, 212, 191, 0.16), transparent 60%),
+    radial-gradient(40rem 26rem at 50% 110%, rgba(251, 191, 36, 0.10), transparent 60%),
+    radial-gradient(circle at top left, rgba(39, 116, 77, 0.28), transparent 22rem),
+    radial-gradient(circle at top right, rgba(80, 180, 120, 0.12), transparent 20rem),
+    linear-gradient(180deg, #020b09 0%, #071915 22%, #0b120f 100%) !important;
+}
+
+/* Live canvas + ambient 3D field (fixed, behind content) */
+.fx-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.9;
+}
+.fx-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fx-orb {
+  position: absolute;
+  border-radius: 9999px;
+  /* NOTE: no filter:blur here — the radial gradients already fade out.
+     A fullscreen blurred layer repainted every frame was the main lag source. */
+  opacity: 0.45;
+  will-change: transform;
+}
+.fx-orb-a {
+  width: 30rem; height: 30rem; left: -10rem; top: -10rem;
+  background: radial-gradient(circle at 30% 30%, rgba(190,242,100,.38), rgba(52,211,153,.18) 55%, transparent 72%);
+  animation: orb-a 18s ease-in-out infinite alternate;
+}
+.fx-orb-b {
+  width: 32rem; height: 32rem; right: -12rem; top: 22%;
+  background: radial-gradient(circle at 60% 40%, rgba(45,212,191,.34), rgba(16,122,87,.16) 55%, transparent 72%);
+  animation: orb-b 22s ease-in-out infinite alternate;
+}
+.fx-sun {
+  position: absolute; top: -90px; right: 8%;
+  width: 220px; height: 220px; border-radius: 9999px;
+  background: radial-gradient(circle, rgba(253,230,138,.85) 0%, rgba(251,191,36,.45) 32%, rgba(251,191,36,.12) 58%, transparent 72%);
+  filter: blur(2px);
+  animation: sun-pulse 7s ease-in-out infinite;
+}
+.fx-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(110,231,183,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110,231,183,0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, black 30%, transparent 78%);
+  transform: perspective(900px) rotateX(18deg) scale(1.15);
+  transform-origin: top center;
+  /* static: animating background-position repaints fullscreen every frame */
+}
+
+/* Floating 3D objects — transform/opacity only (compositor-cheap) */
+.fx-float {
+  position: absolute;
+  font-size: 2rem;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,.45));
+  opacity: 0.85;
+  will-change: transform;
+}
+.fx-f1 { left: 6%;  top: 22%; animation: float-3d 9s ease-in-out infinite; font-size: 2.6rem; }
+.fx-f3 { right: 9%; top: 30%; animation: float-3d 10s ease-in-out -4s infinite; font-size: 2.2rem; }
+.fx-f4 { right: 14%; top: 12%; font-size: 3rem; opacity: .5; animation: cloud-drift 26s ease-in-out infinite alternate; }
+
+/* Keep app content above FX. NOTE: do NOT set z-index on nav/main/footer
+   here — nav carries its own z (sticky top bar + dropdowns above maps). */
+.app-shell { position: relative; z-index: 2; overflow-x: clip; }
+
+/* ── Farmer-first layer: sunlight, touch, motion, offline ────────── */
+
+/* Grid children must never force the track wider than the screen (mobile overflow fix). */
+main .grid > * { min-width: 0; }
+
+/* Touch targets: farmers use phones one-handed, outdoors, sometimes with gloves. */
+main button { min-height: 44px; }
+main select, main input, main textarea { min-height: 44px; }
+main a.inline-flex { min-height: 44px; align-items: center; }
+
+/* Skeleton loaders (transform-only sheen: cheap on any GPU). */
+.skel { position: relative; overflow: hidden; background: rgba(148, 163, 184, 0.14); border-radius: 0.75rem; }
+.skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.14) 50%, transparent 80%); animation: skel-sheen 1.4s ease-in-out infinite; }
+@keyframes skel-sheen { to { transform: translateX(100%); } }
+
+/* Tab panels enter gently — clarity, not decoration. */
+.tab-panel { animation: tab-in 240ms ease-out; }
+@keyframes tab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Skip link for keyboard / screen-reader users. */
+.skip-link { position: fixed; left: 1rem; top: -4rem; z-index: 2000; border-radius: 0.75rem; background: #bef264; color: #05271a; font-weight: 800; padding: 0.75rem 1.25rem; transition: top 0.2s ease; }
+.skip-link:focus { top: 1rem; }
+
+/* Offline banner slides in without blocking content. */
+.offline-banner { animation: banner-in 260ms ease-out; }
+@keyframes banner-in { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+
+/* Bottom tab-bar clearance + notch safe-area (mobile only). */
+@media (max-width: 767px) {
+  main { padding-bottom: 5.75rem; }
+  .mtabbar { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Large-text mode (persisted): the layout is rem-based so it scales cleanly. */
+html.text-large { font-size: 18px; }
+
+/* Animated gradient top beam */
+.fx-beam {
+  position: sticky; top: 0; z-index: 60; height: 3px;
+  background: linear-gradient(90deg, #bef264, #34d399, #2dd4bf, #fbbf24, #bef264);
+  background-size: 300% 100%;
+  animation: gradient-pan 8s linear infinite;
+  box-shadow: 0 0 18px rgba(52,211,153,.55);
+}
+
+/* Brand name — big gradient + shimmer */
+.brand-name {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(92deg, #f8ffd8 5%, #bef264 28%, #34d399 52%, #5eead4 72%, #fde68a 95%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 7s linear infinite;
+  filter: drop-shadow(0 2px 14px rgba(190,242,100,.25));
+}
+.brand-name-lg {
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  line-height: 1.02;
+}
+.brand-shimmer { position: relative; overflow: hidden; }
+.brand-shimmer::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.55) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: shimmer 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.brand-tag {
+  display: inline-flex; align-items: center; gap: .45rem;
+  border: 1px solid rgba(190,242,100,.35);
+  background: linear-gradient(90deg, rgba(190,242,100,.14), rgba(45,212,191,.12));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 24px rgba(52,211,153,.18);
+}
+
+/* 3D logo */
+.logo-3d {
+  display: inline-grid; place-items: center;
+  border-radius: 16px;
+  filter: drop-shadow(0 10px 18px rgba(52,211,153,.35)) drop-shadow(0 2px 6px rgba(0,0,0,.5));
+  transform-style: preserve-3d;
+  animation: logo-float 6s ease-in-out infinite;
+  transition: transform .35s ease;
+}
+a:hover .logo-3d { transform: rotateY(14deg) rotateX(8deg) scale(1.06); }
+.logo-sun { transform-origin: 48px 34px; animation: sun-spin 24s linear infinite; }
+.logo-wheat { transform-origin: 48px 62px; animation: sway 5s ease-in-out infinite; }
+.logo-twinkle { animation: twinkle 2.8s ease-in-out infinite; }
+.logo-twinkle.t2 { animation-delay: .9s; }
+.logo-twinkle.t3 { animation-delay: 1.7s; }
+
+/* 3D tilt cards */
+[data-tilt] {
+  --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
+  transform: perspective(1100px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  position: relative;
+}
+[data-tilt]::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx) var(--my), rgba(255,255,255,.14), transparent 55%);
+  opacity: 0; transition: opacity .35s ease;
+}
+[data-tilt]:hover { box-shadow: 0 26px 60px rgba(0,0,0,.4), 0 0 0 1px rgba(110,231,183,.18), 0 12px 44px rgba(52,211,153,.16); }
+[data-tilt]:hover::before { opacity: 1; }
+
+.card-3d {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.07), transparent 32%),
+    linear-gradient(180deg, rgba(13,32,26,.96), rgba(7,17,13,.98)) !important;
+  border: 1px solid rgba(110,231,183,.18) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+/* Scroll reveal */
+.reveal { opacity: 0; transform: translateY(26px) perspective(800px) rotateX(4deg); transition: opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* Buttons get richer gradient + glow */
+.btn-primary {
+  background: linear-gradient(135deg, #22c55e 0%, #059669 45%, #0d9488 100%) !important;
+  box-shadow: 0 12px 30px rgba(16,185,129,.35), inset 0 1px 0 rgba(255,255,255,.25) !important;
+}
+.btn-primary:hover { box-shadow: 0 18px 44px rgba(16,185,129,.45), inset 0 1px 0 rgba(255,255,255,.3) !important; }
+
+/* Nav glass upgrade — SOLID background, no backdrop-filter.
+   backdrop-filter over the live canvas forces a re-blur every animation
+   frame and was the main remaining lag source. */
+.nav-glass {
+  background: linear-gradient(180deg, #06140f 0%, #050f0b 100%) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.nav-link-active {
+  background: linear-gradient(135deg, rgba(190,242,100,.22), rgba(45,212,191,.16)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 6px 18px rgba(52,211,153,.18);
+  border: 1px solid rgba(190,242,100,.28);
+}
+
+/* Marquee strip */
+.fx-marquee { overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); }
+.fx-marquee-track { display: inline-flex; gap: 2.5rem; padding-right: 2.5rem; animation: marquee 28s linear infinite; }
+
+/* Hero title glow + floating badge */
+.hero-glow-title { text-shadow: 0 0 40px rgba(190,242,100,.25), 0 4px 30px rgba(0,0,0,.5); }
+.float-badge { animation: float-y 5s ease-in-out infinite; }
+.float-badge-d1 { animation-delay: -1.5s; }
+.float-badge-d2 { animation-delay: -3s; }
+
+/* ── keyframes ── */
+@keyframes gradient-pan { to { background-position: 300% center; } }
+@keyframes shimmer { 0% { transform: translateX(-120%);} 55%,100% { transform: translateX(120%);} }
+@keyframes orb-a { from { transform: translate3d(0,0,0) scale(.95);} to { transform: translate3d(60px,-40px,0) scale(1.1);} }
+@keyframes orb-b { from { transform: translate3d(0,0,0) scale(1.05);} to { transform: translate3d(-70px,40px,0) scale(.94);} }
+@keyframes sun-pulse { 0%,100% { transform: scale(1); opacity:.85;} 50% { transform: scale(1.12); opacity:1;} }
+@keyframes sun-spin { to { transform: rotate(360deg);} }
+@keyframes grid-drift { from { background-position: 0 0;} to { background-position: 0 440px;} }
+@keyframes float-y { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-12px);} }
+@keyframes float-3d {
+  0%,100% { transform: translate3d(0,0,0) rotateY(-12deg) rotateX(6deg); }
+  50% { transform: translate3d(10px,-22px,30px) rotateY(14deg) rotateX(-8deg); }
+}
+@keyframes cloud-drift { from { transform: translateX(-30px);} to { transform: translateX(50px);} }
+@keyframes logo-float { 0%,100% { transform: translateY(0) rotateY(-6deg);} 50% { transform: translateY(-4px) rotateY(8deg);} }
+@keyframes sway { 0%,100% { transform: rotate(-2.5deg);} 50% { transform: rotate(2.5deg);} }
+@keyframes twinkle { 0%,100% { opacity:.25; } 50% { opacity:1; } }
+@keyframes marquee { to { transform: translateX(-50%);} }
+
+/* ── Growth strip: seed → harvest (transform/opacity only) ── */
+.gs-stage { color: rgba(209, 250, 229, 0.55); opacity: 0.55; transform: scale(0.92); filter: saturate(0.5); transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease, color 0.5s ease; }
+.gs-stage.is-on { color: #ecfdf5; opacity: 1; transform: scale(1); filter: saturate(1); }
+.gs-dot { display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 9999px; border: 1px solid rgba(190, 242, 100, 0.35); background: rgba(190, 242, 100, 0.1); font-size: 0.68rem; font-weight: 800; color: #bef264; }
+.gs-stage.is-on .gs-dot { background: #bef264; color: #05271a; border-color: #bef264; box-shadow: 0 0 14px rgba(190, 242, 100, 0.5); }
+.gs-sway { transform-origin: 32px 52px; animation: gs-sway 4s ease-in-out infinite; }
+@keyframes gs-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.perf-low .gs-sway { animation: none; }
+
+/* ── Performance fallbacks: low-end devices + small screens ── */
+/* Smoothness: ANY backdrop-blur above the live canvas forces a re-blur of the
+   animated backdrop every frame. Neutralize globally — all surfaces using it
+   are near-opaque dark gradients, so the look is preserved. */
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl,
+.backdrop-blur-2xl,
+.backdrop-blur {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.perf-low .fx-sky,
+.perf-low .fx-float,
+.perf-low .fx-grid,
+.perf-low .fx-sun { display: none !important; }
+.perf-low .fx-orb { animation: none !important; opacity: 0.3; }
+.perf-low .ambient-glow { animation: none !important; }
+.perf-low .brand-shimmer::after { display: none; }
+.perf-low .fx-marquee-track { animation-duration: 60s; }
+.perf-low .logo-3d,
+.perf-low .logo-sun,
+.perf-low .logo-wheat,
+.perf-low .logo-twinkle { animation: none !important; }
+.perf-low [data-tilt] { transform: none !important; }
+
+@media (max-width: 640px) {
+  .fx-sky { opacity: 0.6; }
+  .fx-float { font-size: 1.4rem; }
+  .fx-f4 { display: none; }
+  .fx-orb-a, .fx-orb-b { width: 20rem; height: 20rem; }
+  .ambient-glow { opacity: 0.25; }
 }
 

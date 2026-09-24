@@ -5,6 +5,11 @@ tools/
 **/__pycache__/
 **/target/
 
+# Secrets — never commit real keys (see .env.example)
+.env
+.env.*
+!.env.example
+
 # Local application data and trained models
 **/data/
 **/models/

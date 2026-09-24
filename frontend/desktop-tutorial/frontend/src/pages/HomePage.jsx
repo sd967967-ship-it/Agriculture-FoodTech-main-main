@@ -1,7 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDistricts, getMandiPrices, getWeather, getFollowUps, completeFollowUp } from '../api/cropApi';
 import { useLanguage } from '../context/LanguageContext';
+import QuickActions from '../components/QuickActions';
+import GrowthStages from '../components/GrowthStages';
+import MarketPrices from '../components/MarketPrices';
+import { SkeletonCard } from '../components/ui';
+
+const retryCopy = { en: 'Try again', bn: 'আবার চেষ্টা করুন', hi: 'पुनः प्रयास करें' };
 
 const crops = ['Rice', 'Potato', 'Jute', 'Mustard', 'Tea', 'Tomato', 'Brinjal', 'Chilli', 'Mango', 'Wheat', 'Maize'];
 const typicalPrices = { Rice: 2400, Potato: 1800, Jute: 5200, Mustard: 6200, Tea: 22000, Tomato: 2400, Brinjal: 2600, Chilli: 7000, Mango: 6500, Wheat: 2500, Maize: 2200 };
@@ -16,7 +22,6 @@ const dashboardText = {
   hi: { tabs: ['मौसम', 'बाज़ार भाव', 'नज़दीकी दुकानें'], tag: 'पश्चिम बंगाल किसान सहायता', title: 'हर दिन सही जानकारी के साथ खेती करें।', intro: 'खेत जाने से पहले स्थानीय मौसम, मंडी भाव और पास की कृषि-सामग्री की जानकारी एक ही जगह देखें।', diagnose: 'मेरी फसल जाँचें →', explore: 'स्थानीय जानकारी देखें', weatherDetail: 'खेत के लिए तैयार', priceDetail: '7 दिन का रुझान', shopDetail: 'आपके क्षेत्र के पास', dashboard: 'किसान डैशबोर्ड', local: 'स्थानीय जानकारी, आसानी से', select: 'एक बार जिला चुनें, फिर ज़रूरी जानकारी के लिए टैब बदलें।', area: 'आपका क्षेत्र', useLocation: 'मेरा स्थान इस्तेमाल करें', districtFail: 'जिलों की सूची लोड नहीं हो सकी। फिर कोशिश करें।', locating: 'निकटतम पश्चिम बंगाल जिला खोजा जा रहा है…', nearest: (name) => `${name} को आपके निकटतम जिले के रूप में चुना गया है।`, locationUnsupported: 'इस ब्राउज़र में स्थान सुविधा उपलब्ध नहीं है। कृपया जिला चुनें।', locationFail: 'आपका स्थान नहीं मिल सका। कृपया जिला चुनें।', weatherFail: 'अभी मौसम की जानकारी उपलब्ध नहीं है। कृपया बाद में कोशिश करें।', marketFail: 'अभी बाज़ार भाव उपलब्ध नहीं है। कृपया बाद में कोशिश करें।', help: 'फसल की समस्या में मदद चाहिए?', helpCopy: 'पत्ते की साफ़ तस्वीर अपलोड करें और आसान उपचार सलाह पाएँ।', start: 'फसल जाँच शुरू करें', updating: 'मौसम अपडेट हो रहा है…', chooseDistrict: 'मौसम देखने के लिए जिला चुनें।', conditions: (name) => `वर्तमान स्थिति · ${name}`, weatherUpdate: 'मौसम जानकारी', celsius: 'सेल्सियस', humidity: 'नमी', rain: 'बारिश', wind: 'हवा', next: 'अगले 3 दिन', low: 'न्यूनतम', weatherSource: 'जिला मौसम सेवा। छिड़काव या यात्रा से पहले स्थानीय चेतावनी देखें।', marketTitle: (name) => `${name} में मंडी भाव`, marketCopy: 'कीमत ₹ प्रति क्विंटल है। बेचने से पहले मंडी में पुष्टि करें।', crop: 'फसल', marketLoading: 'बाज़ार भाव लोड हो रहे हैं…', trend: '7 दिन का मूल्य रुझान', trendCopy: (crop) => `${crop} का स्थानीय अनुमानित रुझान`, estimate: 'बाज़ार का अनुमान', marketName: 'मंडी', variety: 'किस्म', range: 'दायरा', modal: 'मुख्य मूल्य', date: 'तारीख', today: 'आज', priceNote: 'किस्म, गुणवत्ता और आवक के अनुसार कीमत बदल सकती है।', near: (name) => `${name} के पास सामान खोजें`, shopsTitle: 'मैप पर पास की कृषि दुकानें खोलें', shopsCopy: 'अपनी ज़रूरत चुनें। चुने हुए जिले की मौजूदा दुकानें, दिशा और संपर्क विवरण देखने के लिए मैप खुलेगा।', shopNames: ['बीज और उर्वरक', 'कृषि उपकरण', 'पशु आहार और चिकित्सा'], shopDetails: ['बीज, पोषण और फसल सुरक्षा सामग्री', 'औज़ार, पंप, स्प्रेयर और मरम्मत', 'पशु आहार और पशुपालन सामग्री'], find: 'पास में खोजें ↗', shopsNote: 'दुकान के परिणाम और समय मैप सेवा देती है। जाने से पहले उपलब्धता के लिए फोन करें।' },
 };
 const tabs = [['weather', '☀'], ['market', '₹'], ['shops', '⌖']];
-const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const dateLabel = (date) => new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(date));
 const localCondition = (condition, text) => text.weatherConditions?.[condition] || condition || text.weatherUpdate;
 const getWeatherArt = (condition = '') => {
@@ -27,14 +32,6 @@ const getWeatherArt = (condition = '') => {
   return { emoji: '🌤️', tint: 'from-emerald-500/20 via-cyan-500/15 to-slate-900/95', label: 'Clear', accent: 'bg-emerald-500/10 text-emerald-100' };
 };
 const timeGreeting = (hour) => hour >= 5 && hour < 12 ? 'Good morning' : hour >= 12 && hour < 17 ? 'Good afternoon' : hour >= 17 && hour < 21 ? 'Good evening' : 'Good night';
-
-function weekFrom(records) {
-  const base = number(records?.[0]?.modalPrice) || 2100;
-  return [-.055, -.025, .018, -.012, .042, .02, 0].map((change, index) => {
-    const date = new Date(); date.setDate(date.getDate() - 6 + index);
-    return { date, price: Math.round(base * (1 + change) / 10) * 10 };
-  });
-}
 
 const reminderCopy = {
   en: {
@@ -87,8 +84,8 @@ export default function HomePage() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [followUps, setFollowUps] = useState([]);
   const [completingTaskId, setCompletingTaskId] = useState(null);
+  const [marketAttempt, setMarketAttempt] = useState(0);
   const selected = districts.find((item) => item.name === district);
-  const week = useMemo(() => weekFrom(market?.records), [market]);
 
   useEffect(() => {
     getFollowUps({ status: 'PENDING' })
@@ -113,7 +110,8 @@ export default function HomePage() {
     }
   };
 
-  useEffect(() => {
+  const loadDistricts = () => {
+    setNotice('');
     getDistricts().then(({ data }) => {
       const availableDistricts = data || [];
       setDistricts(availableDistricts);
@@ -137,6 +135,10 @@ export default function HomePage() {
       }
     })
       .catch(() => setNotice(text.districtFail));
+  };
+
+  useEffect(() => {
+    loadDistricts();
   }, []);
 
   useEffect(() => {
@@ -161,9 +163,9 @@ export default function HomePage() {
     if (!district || tab !== 'market') return;
     setLoading(true);
     getMandiPrices(crop, 'West Bengal', district).then(({ data }) => setMarket(data))
-      .catch(() => setNotice(text.marketFail))
+      .catch(() => { setMarket(null); setNotice(text.marketFail); })
       .finally(() => setLoading(false));
-  }, [crop, district, tab]);
+  }, [crop, district, tab, marketAttempt]);
 
   const useLocation = () => {
     if (!navigator.geolocation) return setNotice(text.locationUnsupported);
@@ -268,47 +270,41 @@ export default function HomePage() {
     })()}
     <section className="relative overflow-hidden bg-[#0a1d18] px-4 py-12 text-white sm:py-16">
       <div className="absolute inset-0 opacity-90" style={{ backgroundImage: 'linear-gradient(120deg, rgba(5, 23, 18, 0.88), rgba(10, 49, 39, 0.74)), url("/farm-hero.svg")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(115deg, rgba(190,242,100,0.10), transparent 30%, rgba(45,212,191,0.12) 55%, transparent 75%, rgba(251,191,36,0.10))', backgroundSize: '300% 300%', animation: 'gradient-pan 12s linear infinite' }} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(149,227,145,0.18),transparent_40%)]" />
       <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-lime-300/20 blur-3xl animate-[drift_18s_ease-in-out_infinite_alternate]" />
       <div className="absolute -left-16 bottom-0 h-64 w-64 rounded-full bg-emerald-300/15 blur-3xl animate-[drift_12s_ease-in-out_infinite_alternate]" />
-      <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div className="max-w-2xl">
-          <span className="inline-block rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-50 backdrop-blur-sm">
-            {text.tag}
+      <div className="reveal relative mx-auto max-w-3xl text-center">
+        <div>
+          <span className="brand-tag inline-block rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-lime-100">
+            ✨ {text.tag}
           </span>
-          <h1 className="mt-6 text-4xl font-black leading-tight tracking-[-0.04em] sm:text-5xl">
-            {text.title}
+          <h1 className="hero-glow-title mt-6 text-4xl font-black leading-tight tracking-[-0.04em] sm:text-5xl">
+            <span className="brand-name brand-name-lg">{text.title}</span>
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-emerald-50/90 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-emerald-50/90 sm:text-lg">
             {text.intro}
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
             <button 
               onClick={() => navigate('/diagnose')} 
-              className="rounded-xl bg-lime-300 px-6 py-3 text-sm font-bold text-emerald-950 shadow-[0_14px_24px_rgba(196,233,98,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-lime-200"
+              className="min-h-[52px] rounded-xl bg-lime-300 px-8 py-3 text-base font-bold text-emerald-950 shadow-[0_14px_24px_rgba(196,233,98,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-lime-200"
             >
               {text.diagnose}
             </button>
             <a 
               href="/tools"
-              className="rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/15"
+              className="inline-flex min-h-[52px] items-center rounded-xl border border-white/40 bg-white/10 px-8 py-3 text-base font-semibold text-white transition-all duration-200 hover:bg-white/15"
             >
               {text.explore}
             </a>
           </div>
-        </div>
-        <div className="rounded-[1.6rem] border border-white/15 bg-white/8 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.22)] backdrop-blur-md">
-          <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-[#dfeecb] shadow-[0_18px_32px_rgba(15,44,32,0.22)]">
-            <div className="h-52 w-full bg-cover bg-center transition-transform duration-700 hover:scale-[1.03]" style={{ backgroundImage: 'url("/farm-card.svg")' }} />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <HeroStat icon="☀" title={text.tabs[0]} detail={text.weatherDetail} />
-            <HeroStat icon="₹" title={text.tabs[1]} detail={text.priceDetail} />
-            <HeroStat icon="⌖" title={text.tabs[2]} detail={text.shopDetail} />
-          </div>
+          <GrowthStages />
         </div>
       </div>
     </section>
+
+    <QuickActions />
 
     <section id="farm-tools" className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
       <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -377,14 +373,23 @@ export default function HomePage() {
         </div>
 
         {notice && (
-          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-100">
-            {notice}
+          <div role="status" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-100">
+            <span>{notice}</span>
+            {notice === text.districtFail && (
+              <button
+                type="button"
+                onClick={loadDistricts}
+                className="min-h-[44px] rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
+              >
+                ↻ {retryCopy[language] || retryCopy.en}
+              </button>
+            )}
           </div>
         )}
 
-        <div className="mt-8">
+        <div key={tab} className="mt-8 tab-panel">
           {tab === 'weather' && <Weather weather={weather} district={district} loading={loading} text={text} />}
-          {tab === 'market' && <Market crop={crop} setCrop={setCrop} market={market} week={week} district={district} loading={loading} text={text} />}
+          {tab === 'market' && <MarketPrices crop={crop} setCrop={setCrop} market={market} district={district} loading={loading} text={text} language={language} onRetry={() => setMarketAttempt((a) => a + 1)} />}
           {tab === 'shops' && <Shops district={district} text={text} />}
         </div>
       </div>
@@ -416,7 +421,7 @@ function MorningBrief({ district, crop, weather, market, currentTime, language }
   const price = Number(market?.records?.[0]?.modalPrice) || typicalPrices[crop] || 2400;
   const greeting = timeGreeting(currentTime.getHours()).replace('Good morning', copy.morning).replace('Good afternoon', copy.afternoon).replace('Good evening', copy.evening).replace('Good night', copy.night);
   const weatherAdvice = weather?.rainMm > 5 ? copy.rainTask : weather ? copy.weatherTask : copy.chooseTask;
-  return <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8" aria-labelledby="morning-brief-title"><div className="rounded-[1.6rem] border border-emerald-700/20 bg-[linear-gradient(135deg,rgba(14,35,29,0.92),rgba(10,25,20,0.88))] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.28)] sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{copy.today}</p><h2 id="morning-brief-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">{greeting}, farmer</h2><p className="mt-2 text-sm text-slate-300">{district ? `📍 ${copy.choose.split(' ')[0]} — ${district}` : `📍 ${copy.choose}`}</p><div className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-3"><p className="rounded-xl border border-emerald-500/20 bg-emerald-950/35 p-3 shadow-inner shadow-emerald-500/10">🌦️ <strong>{copy.weather}:</strong> {weatherAdvice}</p><p className="rounded-xl border border-lime-500/20 bg-lime-950/30 p-3 shadow-inner shadow-lime-500/10">💰 <strong>{crop} {copy.price}:</strong> ₹{price.toLocaleString('en-IN')}/quintal {copy.nearby}.</p><p className="rounded-xl border border-amber-500/20 bg-amber-950/25 p-3 shadow-inner shadow-amber-500/10">🐛 <strong>{copy.pest}:</strong> {copy.pestText}</p></div></div></section>;
+  return <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8" aria-labelledby="morning-brief-title"><div className="rounded-[1.6rem] border border-emerald-700/20 bg-[linear-gradient(135deg,rgba(14,35,29,0.92),rgba(10,25,20,0.88))] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.28)] sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{copy.today}</p><h2 id="morning-brief-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">{greeting}, farmer</h2><p className="mt-2 text-sm text-slate-300">{district ? `📍 ${district}` : `📍 ${copy.choose}`}</p><div className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-3"><p className="rounded-xl border border-emerald-500/20 bg-emerald-950/35 p-3 shadow-inner shadow-emerald-500/10">🌦️ <strong>{copy.weather}:</strong> {weatherAdvice}</p><p className="rounded-xl border border-lime-500/20 bg-lime-950/30 p-3 shadow-inner shadow-lime-500/10">💰 <strong>{crop} {copy.price}:</strong> ₹{price.toLocaleString('en-IN')}/quintal {copy.nearby}.</p><p className="rounded-xl border border-amber-500/20 bg-amber-950/25 p-3 shadow-inner shadow-amber-500/10">🐛 <strong>{copy.pest}:</strong> {copy.pestText}</p></div></div></section>;
 }
 
 export function FarmerPlanner({ district, crop, weather, market, farmCrops, onSave, onRemove }) {
@@ -553,19 +558,15 @@ function ProfitResult({ label, value, tone }) {
   return <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-900/80 p-4"><p className="break-words text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-2 break-words text-xl font-bold sm:text-2xl ${tone}`}>{value}</p></div>;
 }
 
-function HeroStat({ icon, title, detail }) { return <div className="rounded-xl border border-slate-700/80 bg-slate-900/80 p-3 text-center shadow-[0_10px_20px_rgba(0,0,0,0.12)]"><div className="text-2xl">{icon}</div><strong className="mt-2 block text-sm text-slate-100">{title}</strong><span className="text-xs text-emerald-100">{detail}</span></div>; }
 function Metric({ label, value }) { return <div className="rounded-xl border border-slate-700 bg-[#0e1815]/90 p-3 text-center shadow-sm"><span className="block text-lg font-bold text-white">{value}</span><span className="text-xs font-medium text-slate-300">{label}</span></div>; }
 
 function Weather({ weather, district, loading, text }) {
-  if (!weather) return <div className="py-10 text-center text-sm text-slate-300">{loading ? text.updating : text.chooseDistrict}</div>;
+  if (!weather) {
+    if (loading) return <div className="mt-6"><SkeletonCard /></div>;
+    return <div className="py-10 text-center text-sm text-slate-300">{text.chooseDistrict}</div>;
+  }
   const weatherArt = getWeatherArt(weather.condition);
   return <div className="mt-6"><div className={`rounded-[1.6rem] border border-slate-700/80 bg-gradient-to-br ${weatherArt.tint} p-5 shadow-[0_18px_40px_rgba(0,0,0,0.22)] sm:p-7`}><div className="flex flex-col justify-between gap-4 sm:flex-row"><div><p className="text-sm font-semibold text-emerald-200">{text.conditions(district)}</p><h3 className="mt-1 text-3xl font-bold text-white">{localCondition(weather.condition, text)}</h3><p className="mt-2 max-w-xl text-sm leading-6 text-slate-200">{text.weatherUpdate}</p></div><div className={`flex items-center gap-3 rounded-2xl border border-white/15 ${weatherArt.accent} px-5 py-3 text-center shadow-sm`}><span className="text-4xl" aria-label={weatherArt.label}>{weatherArt.emoji}</span><div><span className="block text-4xl font-bold text-white">{weather.temperatureC}°</span><span className="text-xs font-semibold text-slate-300">{text.celsius}</span></div></div></div><div className="mt-6 grid grid-cols-3 gap-3"><Metric label={text.humidity} value={`${weather.humidityPercent}%`} /><Metric label={text.rain} value={`${weather.rainMm} mm`} /><Metric label={text.wind} value={`${weather.windKph} km/h`} /></div></div><div className="mt-5"><h4 className="font-bold text-slate-100">{text.next}</h4><div className="mt-3 grid gap-3 sm:grid-cols-3">{(weather.forecast || []).map((day) => <div key={day.date} className="rounded-xl border border-slate-700 bg-[#0c1513]/90 p-4"><p className="text-sm font-bold text-slate-100">{dateLabel(day.date)}</p><p className="mt-3 text-2xl font-bold text-emerald-300">{day.highC}°</p><p className="text-xs text-slate-300">{text.low} {day.lowC}° · {text.rain} {day.rainMm} mm</p></div>)}</div></div><p className="mt-4 text-xs text-slate-400">{text.weatherSource}</p></div>;
-}
-
-function Market({ crop, setCrop, market, week, district, loading, text }) {
-  const max = Math.max(...week.map((item) => item.price), 1);
-  if (!district) return <div className="py-10 text-center text-sm text-slate-500">{text.chooseDistrict}</div>;
-  return <div className="mt-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h3 className="text-xl font-bold text-slate-900">{text.marketTitle(district)}</h3><p className="mt-1 text-sm text-slate-500">{text.marketCopy}</p></div><label className="text-sm font-semibold text-slate-700">{text.crop}<select value={crop} onChange={(event) => setCrop(event.target.value)} className="ml-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-emerald-600">{crops.map((name) => <option key={name}>{name}</option>)}</select></label></div>{!market && loading ? <div className="py-10 text-sm text-slate-500">{text.marketLoading}</div> : <><div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5"><div className="flex items-center justify-between"><div><p className="font-bold text-slate-900">{text.trend}</p><p className="text-xs text-slate-500">{text.trendCopy(crop)}</p></div><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{text.estimate}</span></div><div className="mt-5 flex h-32 items-end gap-2 sm:gap-4">{week.map((item) => <div key={item.date.toISOString()} className="flex flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] font-semibold text-slate-600">₹{item.price.toLocaleString('en-IN')}</span><div className="w-full max-w-10 rounded-t-md bg-emerald-600" style={{ height: `${Math.max(18, item.price / max * 92)}px` }} /><span className="text-[10px] text-slate-500">{dateLabel(item.date).split(' ')[0]}</span></div>)}</div></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-3">{text.marketName}</th><th className="px-3 py-3">{text.variety}</th><th className="px-3 py-3">{text.range}</th><th className="px-3 py-3">{text.modal}</th><th className="px-3 py-3">{text.date}</th></tr></thead><tbody>{(market?.records || []).map((record, index) => <tr key={`${record.market}-${index}`} className="border-b border-slate-100"><td className="px-3 py-3 font-semibold text-slate-800">{record.market}</td><td className="px-3 py-3 text-slate-600">{record.variety || text.variety}</td><td className="px-3 py-3 text-slate-600">₹{number(record.minPrice).toLocaleString('en-IN')}–₹{number(record.maxPrice).toLocaleString('en-IN')}</td><td className="px-3 py-3 font-bold text-emerald-800">₹{number(record.modalPrice).toLocaleString('en-IN')}</td><td className="px-3 py-3 text-slate-600">{record.date || text.today}</td></tr>)}</tbody></table></div><p className="mt-4 text-xs text-slate-500">{text.priceNote}</p></>}</div>;
 }
 
 function Shops({ district, text }) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCrops, getDistricts, diagnose, transcribeAudio, getWeather, getKvkInfo, getMandiPrices, submitDiagnosisFeedback, createReferral } from '../api/cropApi';
 import { useLanguage } from '../context/LanguageContext';
 import FileUpload from '../components/FileUpload';
@@ -41,6 +41,14 @@ export default function DiagnosePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const resultRef = useRef(null);
+
+  // Move focus to the result so screen-reader and keyboard users land on it.
+  useEffect(() => {
+    if (result && resultRef.current) {
+      resultRef.current.focus({ preventScroll: false });
+    }
+  }, [result]);
   const [isRecording, setIsRecording] = useState(false);
   const [speechStatus, setSpeechStatus] = useState('');
   const [translationLoading, setTranslationLoading] = useState(false);
@@ -52,7 +60,7 @@ export default function DiagnosePage() {
 
   const handleFeedback = (isCorrect) => {
     setFeedbackState(isCorrect ? 'ACCURATE' : 'INACCURATE');
-    submitDiagnosisFeedback({ predictionLogId: result?.id || 1, isCorrect, comments: observations })
+    submitDiagnosisFeedback({ predictionLogId: result?.id || 1, isCorrect, comments: observations, diagnosis: result?.primaryDiagnosis || cropType })
       .catch((err) => console.warn('Could not post feedback', err));
   };
 
@@ -677,6 +685,13 @@ export default function DiagnosePage() {
       };
       const res = await diagnose(selectedFile, payload);
       setResult(res.data);
+      // Share a short summary with KisanMitra chat (same session only) so the
+      // chatbot can use the existing diagnosis result instead of guessing.
+      try {
+        const d = res.data || {};
+        const summary = [d.primaryDiagnosis, d.diagnosisType, cropType, district].filter(Boolean).join(' | ');
+        if (summary) sessionStorage.setItem('fasal-last-diagnosis', summary);
+      } catch { /* private mode — chat simply gets no extra context */ }
 
       const hasLocation = latitude && longitude;
       if (hasLocation) {
@@ -848,11 +863,11 @@ export default function DiagnosePage() {
                 value={observations}
                 onChange={e => setObservations(e.target.value)}
               />
-              {speechStatus && <p className="mt-2 text-sm text-emerald-700">{speechStatus}</p>}
+              {speechStatus && <p role="status" className="mt-2 text-sm text-emerald-700">{speechStatus}</p>}
             </div>
             <p className="text-xs leading-5 text-slate-400">{labelText.privacy}</p>
 
-            {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+            {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
 
             <button 
               type="submit" 
@@ -864,7 +879,7 @@ export default function DiagnosePage() {
           </form>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div ref={resultRef} tabIndex={-1} aria-label={labelText.diagnoseTitle} className="space-y-6 outline-none">
           <div className="rounded-[1.6rem] border border-emerald-500/20 bg-[linear-gradient(180deg,rgba(10,18,15,0.96),rgba(7,13,11,0.98))] p-6 shadow-[0_20px_38px_rgba(0,0,0,0.25)] md:p-8">
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <h2 className="text-3xl font-black tracking-[-0.04em] text-slate-100">{displayDiagnosis}</h2>

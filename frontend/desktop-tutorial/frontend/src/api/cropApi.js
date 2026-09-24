@@ -10,6 +10,16 @@ function sessionHeaders() {
   return token ? { 'X-Session-Token': token } : {};
 }
 
+/** Username stored at login (ProfilePage saves profile.name = data.username). */
+function storedUsername() {
+  try {
+    const profile = JSON.parse(localStorage.getItem('fasal-sathi-farmer-profile') || '{}');
+    return profile.name || profile.username || '';
+  } catch {
+    return '';
+  }
+}
+
 async function prepareDiagnosisImage(image) {
   if (!image || image.size <= 2 * 1024 * 1024) return image;
 
@@ -131,11 +141,38 @@ export function getAdminDashboard() {
 }
 
 export function submitDiagnosisFeedback(feedback) {
-  return api.post('/diagnosis-feedback', feedback, { headers: sessionHeaders() });
+  // Backend contract (DiagnosisFeedbackController): { farmerUsername, diagnosis, label }.
+  // Accepts the page-level shape too and translates it, so old callers keep working.
+  const data = feedback || {};
+  const payload = {
+    farmerUsername: data.farmerUsername || storedUsername() || 'anonymous',
+    diagnosis: data.diagnosis || data.primaryDiagnosis || '',
+    label: data.label
+      || (data.isCorrect === true ? 'correct' : data.isCorrect === false ? 'incorrect' : ''),
+    ...(data.comments ? { comments: String(data.comments) } : {}),
+    ...(data.modelVersion ? { modelVersion: String(data.modelVersion) } : {}),
+  };
+  return api.post('/diagnosis-feedback', payload, { headers: sessionHeaders() });
 }
 
 export function createReferral(referral) {
-  return api.post('/referrals', referral, { headers: sessionHeaders() });
+  // Backend contract (ReferralController): farmerUsername, crop and sampleId are required.
+  const data = referral || {};
+  const payload = {
+    ...data,
+    farmerUsername: data.farmerUsername || storedUsername() || 'anonymous',
+  };
+  return api.post('/referrals', payload, { headers: sessionHeaders() });
+}
+
+export function askKisanMitra(question, crop, district, language) {
+  // Backend contract (KisanMitraController): POST /kisanmitra/chat with
+  // { question, crop, district, language } -> { answer, safetyNote, ... }.
+  return api.post(
+    '/kisanmitra/chat',
+    { question, crop, district, language },
+    { headers: sessionHeaders() },
+  );
 }
 
 export default api;

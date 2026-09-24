@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="FasalSathi 3D logo">
+  <defs>
+    <radialGradient id="sun3d" cx="50%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#fffbe3"/>
+      <stop offset="38%" stop-color="#fde68a"/>
+      <stop offset="72%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0.9"/>
+    </radialGradient>
+    <linearGradient id="leaf3d" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d9f99d"/>
+      <stop offset="45%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="field3d" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#166534"/>
+      <stop offset="55%" stop-color="#0c3b24"/>
+      <stop offset="100%" stop-color="#05271a"/>
+    </linearGradient>
+    <linearGradient id="ring3d" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bef264"/>
+      <stop offset="50%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="#06130e"/>
+  <circle cx="96" cy="96" r="88" fill="none" stroke="url(#ring3d)" stroke-width="7"/>
+  <circle cx="96" cy="68" r="30" fill="url(#sun3d)"/>
+  <path d="M14 124 Q48 96 80 116 T146 112 T178 124 L178 156 Q96 176 14 156 Z" fill="url(#field3d)" stroke="#34d399" stroke-opacity="0.4" stroke-width="2"/>
+  <path d="M14 136 Q60 120 96 132 T178 134" fill="none" stroke="#4ade80" stroke-opacity="0.55" stroke-width="3" stroke-dasharray="10 8"/>
+  <g stroke-linecap="round">
+    <path d="M96 156 V88" stroke="#d9f99d" stroke-width="5"/>
+    <ellipse cx="85" cy="104" rx="10" ry="5.5" fill="url(#leaf3d)" transform="rotate(-28 85 104)"/>
+    <ellipse cx="107" cy="104" rx="10" ry="5.5" fill="url(#leaf3d)" transform="rotate(28 107 104)"/>
+    <ellipse cx="85" cy="120" rx="10" ry="5.5" fill="url(#leaf3d)" transform="rotate(-28 85 120)"/>
+    <ellipse cx="107" cy="120" rx="10" ry="5.5" fill="url(#leaf3d)" transform="rotate(28 107 120)"/>
+    <ellipse cx="96" cy="80" rx="7" ry="11" fill="#fef08a" stroke="#f59e0b" stroke-width="2"/>
+  </g>
+  <g fill="#fef9c3"><circle cx="52" cy="60" r="3.5"/><circle cx="144" cy="116" r="3"/><circle cx="48" cy="112" r="2.6"/></g>
+</svg>

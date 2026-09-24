@@ -48,6 +48,18 @@ const cropSchemes = {
   Maize: [['National Food Security Mission - Maize', 'Official maize productivity and farmer-support programmes.', 'https://nfsm.gov.in/']],
 };
 
+const findCopy = {
+  en: { label: 'Find a tool', placeholder: 'Search tools… e.g. water, profit, loan', none: 'No tool matches. Try “water”, “profit” or “record”.' },
+  bn: { label: 'সরঞ্জাম খুঁজুন', placeholder: 'খুঁজুন… যেমন সেচ, লাভ, রেকর্ড', none: 'কিছু মেলেনি। “সেচ”, “লাভ” বা “রেকর্ড” লিখে দেখুন।' },
+  hi: { label: 'उपकरण खोजें', placeholder: 'खोजें… जैसे सिंचाई, लाभ, रिकॉर्ड', none: 'कुछ नहीं मिला। “सिंचाई”, “लाभ” या “रिकॉर्ड” लिखें।' },
+};
+
+const fertIndexCopy = {
+  en: { title: 'Fertilizer calculator', desc: 'Urea, SSP and MOP bags for your field size.' },
+  bn: { title: 'সার হিসাব', desc: 'জমির মাপে ইউরিয়া, এসএসপি ও এমওপির বস্তা।' },
+  hi: { title: 'उर्वरक कैलकुलेटर', desc: 'खेत के आकार के लिए यूरिया, एसएसपी व एमओपी।' },
+};
+
 export default function ToolsPage() {
   const { language } = useLanguage();
   const text = copy[language] || copy.en;
@@ -60,6 +72,19 @@ export default function ToolsPage() {
   });
   const [scheduleSaved, setScheduleSaved] = useState(false);
   const [schemeCrop, setSchemeCrop] = useState('');
+  const [query, setQuery] = useState('');
+  const findText = findCopy[language] || findCopy.en;
+  const fertText = fertIndexCopy[language] || fertIndexCopy.en;
+  const toolIndex = [
+    { id: 'tool-history', icon: '🗒️', title: text.history, desc: text.historyCopy },
+    { id: 'tool-irrigation', icon: '💧', title: text.irrigation, desc: text.irrigationCopy },
+    { id: 'tool-schemes', icon: '🏛️', title: text.schemes, desc: text.schemesCopy },
+    { id: 'tool-profit', icon: '💰', title: text.profit, desc: '' },
+    { id: 'tool-fertilizer', icon: '🧪', title: fertText.title, desc: fertText.desc },
+    { id: null, icon: '🪤', title: text.pestBannerTitle, desc: text.pestBannerDesc, to: '/pest-log' },
+  ];
+  const q = query.trim().toLowerCase();
+  const visibleTools = toolIndex.filter((tool) => !q || `${tool.title} ${tool.desc}`.toLowerCase().includes(q));
   const [profitInputs, setProfitInputs] = useState({ land: '2', crop: 'Tomato', seed: '4000', fertilizer: '7000', labour: '12000', production: '80', price: '2400' });
   const [profitMarket, setProfitMarket] = useState(null);
   const schemesForCrop = cropSchemes[schemeCrop] || text.schemesList;
@@ -106,7 +131,36 @@ export default function ToolsPage() {
   };
 
   return <div className="mx-auto max-w-7xl px-4 py-10 sm:py-14">
-    <header className="mb-10 max-w-3xl"><p className="text-xs font-bold uppercase tracking-widest text-emerald-400">{text.eyebrow}</p><h1 className="mt-2 text-3xl font-bold text-slate-100 sm:text-4xl">{text.title}</h1><p className="mt-3 text-slate-300">{text.intro}</p></header>
+    <header className="mb-8 max-w-3xl"><p className="text-xs font-bold uppercase tracking-widest text-emerald-400">{text.eyebrow}</p><h1 className="mt-2 text-3xl font-bold text-slate-100 sm:text-4xl">{text.title}</h1><p className="mt-3 text-slate-300">{text.intro}</p></header>
+    <div className="mb-8">
+      <label className="block text-sm font-bold text-slate-200" htmlFor="tool-search">{findText.label}
+        <input
+          id="tool-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={findText.placeholder}
+          className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-base text-slate-100 outline-none placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20"
+        />
+      </label>
+      {visibleTools.length === 0 ? (
+        <p role="status" className="mt-3 rounded-xl border border-dashed border-slate-600 p-4 text-center text-sm text-slate-300">{findText.none}</p>
+      ) : (
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {visibleTools.map((tool) => tool.to ? (
+            <Link key={tool.title} to={tool.to} className="flex min-h-[76px] items-center gap-3 rounded-xl border border-emerald-500/25 bg-slate-900/70 p-3 text-left transition-colors hover:border-emerald-400">
+              <span aria-hidden="true" className="text-2xl">{tool.icon}</span>
+              <span className="text-sm font-bold leading-5 text-slate-100">{tool.title}</span>
+            </Link>
+          ) : (
+            <a key={tool.id} href={`#${tool.id}`} className="flex min-h-[76px] items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/70 p-3 text-left transition-colors hover:border-emerald-400">
+              <span aria-hidden="true" className="text-2xl">{tool.icon}</span>
+              <span className="text-sm font-bold leading-5 text-slate-100">{tool.title}</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
     <div className="mb-8 overflow-hidden rounded-2xl border border-lime-400/30 bg-gradient-to-r from-emerald-950/80 via-emerald-900/60 to-[#071d17] p-6 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-400/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-lime-300">
@@ -127,10 +181,10 @@ export default function ToolsPage() {
       </Link>
     </div>
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 className="text-2xl font-bold text-slate-100">{text.history}</h2><p className="mt-2 text-sm text-slate-400">{text.historyCopy}</p><form onSubmit={saveHistory} className="mt-6 grid gap-4 sm:grid-cols-2"><ToolSelect label={text.crop} value={record.crop} options={crops} onChange={(value) => setRecord({ ...record, crop: value })} /><ToolInput label={text.date} type="date" value={record.date} onChange={(value) => setRecord({ ...record, date: value })} /><ToolInput label={text.issue} value={record.issue} onChange={(value) => setRecord({ ...record, issue: value })} /><ToolInput label={text.action} value={record.action} onChange={(value) => setRecord({ ...record, action: value })} /><button className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 sm:col-span-2">{text.save}</button></form><div className="mt-6 space-y-3">{history.length === 0 ? <p className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-400">{text.empty}</p> : <><p className="text-xs font-bold uppercase tracking-wider text-emerald-400">{text.saved}</p>{history.map((item) => <div key={item.id} className="flex items-start justify-between gap-3 rounded-lg border border-slate-700 bg-slate-950/70 p-4"><div><p className="font-bold text-slate-100">{item.crop} · {item.date}</p><p className="mt-1 text-sm text-slate-300">{item.issue}</p>{item.action && <p className="mt-1 text-xs text-slate-400">{item.action}</p>}</div><button type="button" onClick={() => removeHistory(item.id)} className="text-xs font-semibold text-red-300 hover:text-red-200">{text.remove}</button></div>)}</>}</div></section>
-      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 className="text-2xl font-bold text-slate-100">{text.irrigation}</h2><p className="mt-2 text-sm text-slate-400">{text.irrigationCopy}</p><form onSubmit={saveSchedule} className="mt-6 grid gap-4"><ToolSelect label={text.soil} value={schedule.soil} options={text.soilOptions} onChange={(value) => setSchedule({ ...schedule, soil: value })} /><ToolInput label={text.nextWater} type="date" value={schedule.date} onChange={(value) => setSchedule({ ...schedule, date: value })} /><ToolInput label={text.frequency} type="number" min="1" max="30" value={schedule.frequency} onChange={(value) => setSchedule({ ...schedule, frequency: value })} /><button className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500">{text.schedule}</button></form>{scheduleSaved && <p className="mt-4 rounded-lg bg-emerald-950/70 p-3 text-sm text-emerald-300">{text.scheduleSaved}</p>}</section>
-      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 className="text-2xl font-bold text-slate-100">{text.schemes}</h2><p className="mt-2 text-sm text-slate-400">{text.schemesCopy}</p><label className="mt-6 block text-sm font-semibold text-slate-200">{text.schemeCrop}<select value={schemeCrop} onChange={(event) => setSchemeCrop(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-3 text-slate-100"><option value="">{text.all}</option>{crops.map((crop) => <option key={crop}>{crop}</option>)}</select></label><p className="mt-5 text-xs text-slate-400">{text.schemesFor}: {schemeCrop || text.general}</p><div className="mt-3 space-y-3">{schemesForCrop.map(([name, description, url]) => <div key={name} className="rounded-lg border border-slate-700 bg-slate-950/70 p-4"><h3 className="font-bold text-slate-100">{name}</h3><p className="mt-1 text-sm text-slate-400">{description}</p><a className="mt-3 inline-flex text-sm font-bold text-emerald-300 hover:text-emerald-200" href={url} target="_blank" rel="noreferrer">{text.open} ↗</a></div>)}</div></section>
-      <section className="rounded-2xl border border-emerald-900/60 bg-emerald-950/40 p-6 shadow-md"><h2 className="text-2xl font-bold text-slate-100">{text.profit}</h2><div className="mt-6"><ProfitCalculator inputs={profitInputs} onChange={(field, value) => setProfitInputs((current) => ({ ...current, [field]: value }))} market={profitMarket} language={language} /></div></section>
+      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 id="tool-history" className="scroll-mt-28 text-2xl font-bold text-slate-100">{text.history}</h2><p className="mt-2 text-sm text-slate-400">{text.historyCopy}</p><form onSubmit={saveHistory} className="mt-6 grid gap-4 sm:grid-cols-2"><ToolSelect label={text.crop} value={record.crop} options={crops} onChange={(value) => setRecord({ ...record, crop: value })} /><ToolInput label={text.date} type="date" value={record.date} onChange={(value) => setRecord({ ...record, date: value })} /><ToolInput label={text.issue} value={record.issue} onChange={(value) => setRecord({ ...record, issue: value })} /><ToolInput label={text.action} value={record.action} onChange={(value) => setRecord({ ...record, action: value })} /><button className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 sm:col-span-2">{text.save}</button></form><div className="mt-6 space-y-3">{history.length === 0 ? <p className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-400">{text.empty}</p> : <><p className="text-xs font-bold uppercase tracking-wider text-emerald-400">{text.saved}</p>{history.map((item) => <div key={item.id} className="flex items-start justify-between gap-3 rounded-lg border border-slate-700 bg-slate-950/70 p-4"><div><p className="font-bold text-slate-100">{item.crop} · {item.date}</p><p className="mt-1 text-sm text-slate-300">{item.issue}</p>{item.action && <p className="mt-1 text-xs text-slate-400">{item.action}</p>}</div><button type="button" onClick={() => removeHistory(item.id)} className="text-xs font-semibold text-red-300 hover:text-red-200">{text.remove}</button></div>)}</>}</div></section>
+      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 id="tool-irrigation" className="scroll-mt-28 text-2xl font-bold text-slate-100">{text.irrigation}</h2><p className="mt-2 text-sm text-slate-400">{text.irrigationCopy}</p><form onSubmit={saveSchedule} className="mt-6 grid gap-4"><ToolSelect label={text.soil} value={schedule.soil} options={text.soilOptions} onChange={(value) => setSchedule({ ...schedule, soil: value })} /><ToolInput label={text.nextWater} type="date" value={schedule.date} onChange={(value) => setSchedule({ ...schedule, date: value })} /><ToolInput label={text.frequency} type="number" min="1" max="30" value={schedule.frequency} onChange={(value) => setSchedule({ ...schedule, frequency: value })} /><button className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500">{text.schedule}</button></form>{scheduleSaved && <p className="mt-4 rounded-lg bg-emerald-950/70 p-3 text-sm text-emerald-300">{text.scheduleSaved}</p>}</section>
+      <section className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-md"><h2 id="tool-schemes" className="scroll-mt-28 text-2xl font-bold text-slate-100">{text.schemes}</h2><p className="mt-2 text-sm text-slate-400">{text.schemesCopy}</p><label className="mt-6 block text-sm font-semibold text-slate-200">{text.schemeCrop}<select value={schemeCrop} onChange={(event) => setSchemeCrop(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-3 text-slate-100"><option value="">{text.all}</option>{crops.map((crop) => <option key={crop}>{crop}</option>)}</select></label><p className="mt-5 text-xs text-slate-400">{text.schemesFor}: {schemeCrop || text.general}</p><div className="mt-3 space-y-3">{schemesForCrop.map(([name, description, url]) => <div key={name} className="rounded-lg border border-slate-700 bg-slate-950/70 p-4"><h3 className="font-bold text-slate-100">{name}</h3><p className="mt-1 text-sm text-slate-400">{description}</p><a className="mt-3 inline-flex text-sm font-bold text-emerald-300 hover:text-emerald-200" href={url} target="_blank" rel="noreferrer">{text.open} ↗</a></div>)}</div></section>
+      <section className="rounded-2xl border border-emerald-900/60 bg-emerald-950/40 p-6 shadow-md"><h2 id="tool-profit" className="scroll-mt-28 text-2xl font-bold text-slate-100">{text.profit}</h2><div className="mt-6"><ProfitCalculator inputs={profitInputs} onChange={(field, value) => setProfitInputs((current) => ({ ...current, [field]: value }))} market={profitMarket} language={language} /></div></section>
       <section className="rounded-2xl border border-teal-900/60 bg-slate-900/80 p-6 shadow-md lg:col-span-2">
         <FertilizerCalculator language={language} />
       </section>
@@ -165,7 +219,7 @@ function FertilizerCalculator({ language = 'en' }) {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-slate-100">{t.title}</h2>
+      <h2 id="tool-fertilizer" className="scroll-mt-28 text-2xl font-bold text-slate-100">{t.title}</h2>
       <p className="mt-2 text-sm text-slate-400">{t.copy}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-sm font-semibold text-slate-200">
