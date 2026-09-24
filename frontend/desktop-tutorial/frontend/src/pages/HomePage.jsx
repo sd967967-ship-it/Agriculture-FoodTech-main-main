@@ -263,6 +263,7 @@ export default function HomePage() {
         </OptimizedCard>
       );
     })()}
+    <div className="mx-auto my-8 max-w-7xl px-4 sm:my-10">
     <OptimizedHeroSection>
         <div className="reveal relative mx-auto max-w-3xl text-center">
           <div>
@@ -293,6 +294,7 @@ export default function HomePage() {
           </div>
         </div>
       </OptimizedHeroSection>
+    </div>
 
       <QuickActions />
 
@@ -407,7 +409,7 @@ const MorningBrief = memo(function MorningBrief({ district, crop, weather, marke
   const price = Number(market?.records?.[0]?.modalPrice) || typicalPrices[crop] || 2400;
   const greeting = timeGreeting(currentTime.getHours()).replace('Good morning', copy.morning).replace('Good afternoon', copy.afternoon).replace('Good evening', copy.evening).replace('Good night', copy.night);
   const weatherAdvice = weather?.rainMm > 5 ? copy.rainTask : weather ? copy.weatherTask : copy.chooseTask;
-  return <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8" aria-labelledby="morning-brief-title"><div className="rounded-3xl border border-emerald-700/20 bg-[#0F291E] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.28)] sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{copy.today}</p><h2 id="morning-brief-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">{greeting}, farmer</h2><p className="mt-2 text-sm text-slate-300">{district ? `📍 ${district}` : `📍 ${copy.choose}`}</p><div className="mt-4 grid items-stretch gap-3 text-sm text-slate-200 md:grid-cols-3"><p className="flex h-full flex-col justify-start rounded-2xl border border-emerald-500/20 bg-emerald-950/35 p-4 leading-6">🌦️ <strong>{copy.weather}:</strong> <span>{weatherAdvice}</span></p><Link to="/mandi-prices" className="flex h-full flex-col justify-start rounded-2xl border border-lime-500/20 bg-lime-950/30 p-4 leading-6 transition-colors hover:border-lime-400/60">💰 <strong>{crop} {copy.price}:</strong> <span>₹{price.toLocaleString('en-IN')}/quintal {copy.nearby}.</span></Link><p className="flex h-full flex-col justify-start rounded-2xl border border-amber-500/20 bg-amber-950/25 p-4 leading-6">🐛 <strong>{copy.pest}:</strong> <span>{copy.pestText}</span></p></div></div></section>;
+  return <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-8" aria-labelledby="morning-brief-title"><div className="rounded-3xl border border-emerald-700/20 bg-[#0F291E] p-5 shadow-[0_15px_35px_rgba(0,0,0,0.28)] sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">{copy.today}</p><h2 id="morning-brief-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">{greeting}, farmer</h2><p className="mt-2 text-sm text-slate-300">{district ? `📍 ${district}` : `📍 ${copy.choose}`}</p><div className="mt-4 grid items-stretch gap-4 text-sm text-slate-200 md:grid-cols-3"><p className="flex h-full flex-col justify-start rounded-2xl border border-emerald-500/20 bg-emerald-950/35 p-4 leading-6">🌦️ <strong>{copy.weather}:</strong> <span>{weatherAdvice}</span></p><Link to="/mandi-prices" className="flex h-full flex-col justify-start rounded-2xl border border-lime-500/20 bg-lime-950/30 p-4 leading-6 transition-colors hover:border-lime-400/60">💰 <strong>{crop} {copy.price}:</strong> <span>₹{price.toLocaleString('en-IN')}/quintal {copy.nearby}.</span></Link><p className="flex h-full flex-col justify-start rounded-2xl border border-amber-500/20 bg-amber-950/25 p-4 leading-6">🐛 <strong>{copy.pest}:</strong> <span>{copy.pestText}</span></p></div></div></section>;
 });
 
 export function FarmerPlanner({ district, crop, weather, market, farmCrops, onSave, onRemove }) {

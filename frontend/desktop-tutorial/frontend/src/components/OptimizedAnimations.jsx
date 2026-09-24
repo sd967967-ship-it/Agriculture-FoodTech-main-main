@@ -7,7 +7,7 @@ import React from 'react';
 
 export function OptimizedHeroSection({ children }) {
   return (
-    <section className="relative overflow-hidden bg-[#0F291E] px-4 py-12 sm:py-16">
+    <section className="relative overflow-hidden rounded-3xl border border-emerald-900/40 bg-[#0F291E] py-12 sm:py-16">
       {/* Static background: no per-frame animation, no blur filters */}
       <div className="absolute inset-0" style={{
         backgroundImage: 'linear-gradient(120deg, rgba(6, 28, 20, 0.94), rgba(15, 41, 30, 0.88)), url("/farm-hero.svg")',
@@ -18,7 +18,7 @@ export function OptimizedHeroSection({ children }) {
         background: 'linear-gradient(115deg, rgba(190,242,100,0.05), transparent 35%, rgba(45,212,191,0.06) 60%, transparent 80%)'
       }} />
 
-      <div className="reveal relative mx-auto max-w-3xl text-center">
+      <div className="reveal relative mx-auto max-w-3xl px-4 text-center">
         {children}
       </div>
     </section>
