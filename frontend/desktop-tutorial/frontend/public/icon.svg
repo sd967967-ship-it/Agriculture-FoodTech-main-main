@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="FasalSathi">
-  <rect width="192" height="192" rx="42" fill="#0b2a1d"/>
-  <circle cx="96" cy="96" r="68" fill="#b8f34a" opacity=".16"/>
-  <path d="M96 145V49M96 73c-24-18-44-8-50 8 21 3 39 1 50-8Zm0 25c25-18 44-8 50 8-21 3-39 1-50-8Zm0 23c-20-14-37-7-43 7 18 3 33 1 43-7Z" fill="none" stroke="#b8f34a" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
-  <path d="M72 49h48" stroke="#f5c84b" stroke-linecap="round" stroke-width="9"/>
-</svg>

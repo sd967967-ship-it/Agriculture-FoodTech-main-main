@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="FasalSathi logo">
+  <defs>
+    <linearGradient id="fs-brand" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="fs-sprout" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#0B7A55"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="92" height="92" rx="22" fill="#061C14" stroke="#10B981" stroke-opacity="0.35" stroke-width="2"/>
+  <path d="M8 70 Q28 62 48 68 T88 68 L88 96 L8 96 Z" fill="#0F291E"/>
+  <path d="M8 70 Q28 62 48 68 T88 68" fill="none" stroke="#10B981" stroke-opacity="0.6" stroke-width="2"/>
+  <path d="M28 52 A20 20 0 0 1 68 52" fill="none" stroke="url(#fs-brand)" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="48" cy="52" r="4" fill="#F59E0B"/>
+  <path d="M48 78 V46" stroke="url(#fs-sprout)" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M48 66 C40 64 34 58 32 50" fill="none" stroke="url(#fs-sprout)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M48 66 C56 64 62 58 64 50" fill="none" stroke="url(#fs-sprout)" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="36" cy="56" rx="7" ry="3.2" fill="#10B981" transform="rotate(-28 36 56)"/>
+  <ellipse cx="60" cy="56" rx="7" ry="3.2" fill="#10B981" transform="rotate(28 60 56)"/>
+  <ellipse cx="48" cy="40" rx="4" ry="7" fill="#F59E0B"/>
+  <path d="M48 33 V47 M44 36 L52 44 M52 36 L44 44" stroke="#B45309" stroke-width="1.2" stroke-linecap="round"/>
+</svg>
