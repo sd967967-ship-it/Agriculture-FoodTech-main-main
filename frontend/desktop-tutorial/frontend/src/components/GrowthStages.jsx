@@ -83,7 +83,7 @@ export default function GrowthStages() {
       ([entry]) => {
         visible = entry.isIntersecting;
         if (visible && !timer) {
-          timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 1400);
+          timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 2800);
         } else if (!visible && timer) {
           window.clearInterval(timer);
           timer = 0;
@@ -94,12 +94,12 @@ export default function GrowthStages() {
     const onVis = () => {
       if (document.hidden && timer) { window.clearInterval(timer); timer = 0; }
       else if (!document.hidden && visible && !timer) {
-        timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 1400);
+        timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 2800);
       }
     };
     if (ref.current) io.observe(ref.current);
     document.addEventListener('visibilitychange', onVis);
-    timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 1400);
+    timer = window.setInterval(() => setActive((a) => (a + 1) % 5), 2800);
     return () => {
       window.clearInterval(timer);
       io.disconnect();

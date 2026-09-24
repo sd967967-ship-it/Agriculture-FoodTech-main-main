@@ -67,11 +67,11 @@ export default function Navbar() {
     <nav className="nav-glass sticky top-0 z-[1200] border-b border-lime-200/15 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-[4.75rem] items-center justify-between gap-3">
-          {/* Enhanced 3D logo + gradient brand name */}
+          {/* Paddy-sprout logo + solid brand name */}
           <Link to="/" className="group flex items-center gap-3" aria-label="FasalSathi home">
             <Logo size={44} />
             <span className="leading-none">
-              <span className="brand-name brand-shimmer block text-[1.45rem]">FasalSathi</span>
+              <span className="block text-[1.45rem] font-extrabold tracking-tight text-[#F7FAF6]">FasalSathi</span>
               <span className="mt-1 hidden text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-200/70 min-[400px]:block">
                 AI Crop Doctor · ফসল সাথী
               </span>

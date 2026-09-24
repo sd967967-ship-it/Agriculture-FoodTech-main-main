@@ -15,6 +15,7 @@ const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 const PestLogPage = lazy(() => import('./pages/PestLogPage'));
 const HotspotsPage = lazy(() => import('./pages/HotspotsPage'));
 const KisanMitraPage = lazy(() => import('./pages/KisanMitraPage'));
+const MandiPricesPage = lazy(() => import('./pages/MandiPricesPage'));
 const OfficialDashboard = lazy(() => import('./pages/OfficialDashboard'));
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
               <Route path="/pest-observations" element={<PestLogPage />} />
               <Route path="/hotspots" element={<HotspotsPage />} />
               <Route path="/kisanmitra" element={<KisanMitraPage />} />
+              <Route path="/mandi-prices" element={<MandiPricesPage />} />
               <Route path="/admin/dashboard" element={<OfficialDashboard />} />
               <Route path="/admin" element={<OfficialDashboard />} />
               <Route path="*" element={<HomePage />} />

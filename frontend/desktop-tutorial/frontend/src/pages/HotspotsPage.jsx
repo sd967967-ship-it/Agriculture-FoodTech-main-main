@@ -453,6 +453,10 @@ const textContent = {
     topIssue: 'Primary Disease/Pest',
     action: 'Recommended Field Advisory',
     noData: 'No active hotspot clusters detected for the selected filters.',
+    noDataForCrop: (crop) => `No active hotspot clusters for ${crop} in this time window — no outbreak reports. Field monitoring is still active.`,
+    allClearTitle: 'No active risk',
+    allClearCopy: 'No pest or disease outbreak has been reported for this crop in the selected time window.',
+    allClearAdvice: 'Keep scouting leaves and soil moisture weekly. Report any unusual spots or pests from the Diagnose page so the map stays accurate.',
     loading: 'Loading geospatial surveillance data...',
     mapNote: 'Interactive West Bengal District & Block Risk Map with localized surveillance zones (3.0 km buffer radius).',
     selectedDistrict: 'Selected Hotspot',
@@ -524,6 +528,10 @@ const textContent = {
     topIssue: 'প্রধান রোগ/পোকা',
     action: 'সুপারিশকৃত মাঠের ব্যবস্থা',
     noData: 'নির্বাচিত ফিল্টারের জন্য কোনো সক্রিয় হটস্পট ক্লাস্টার পাওয়া যায়নি।',
+    noDataForCrop: (crop) => `এই সময়সীমায় ${crop}-এর জন্য কোনো সক্রিয় হটস্পট নেই — কোনো প্রাদুর্ভাবের রিপোর্ট নেই। নজরদারি চালু আছে।`,
+    allClearTitle: 'কোনো সক্রিয় ঝুঁকি নেই',
+    allClearCopy: 'নির্বাচিত সময়সীমায় এই ফসলের জন্য কোনো পোকা বা রোগের প্রাদুর্ভাব রিপোর্ট হয়নি।',
+    allClearAdvice: 'প্রতি সপ্তাহে পাতা ও মাটির আর্দ্রতা পরীক্ষা চালিয়ে যান। অস্বাভাবিক দাগ বা পোকা দেখলে Diagnose পেজ থেকে রিপোর্ট করুন।',
     loading: 'ভূ-স্থানিক নজরদারি তথ্য লোড হচ্ছে...',
     mapNote: 'সাম্প্রতিক মাঠ পরীক্ষা ও ফাঁদের হিসাবের ভিত্তিতে নির্দিষ্ট ব্লকের ক্ষুদ্র নজরদারি অঞ্চল (৩ কিমি বাফার)।',
     selectedDistrict: 'নির্বাচিত হটস্পট',
@@ -595,6 +603,10 @@ const textContent = {
     topIssue: 'मुख्य बीमारी/कीट',
     action: 'अनुशंसित मैदानी कार्रवाई',
     noData: 'चयनित फ़िल्टर के लिए कोई सक्रिय हॉटस्पॉट क्लस्टर नहीं मिला।',
+    noDataForCrop: (crop) => `इस समय सीमा में ${crop} के लिए कोई सक्रिय हॉटस्पॉट नहीं है — कोई प्रकोप रिपोर्ट नहीं। निगरानी जारी है।`,
+    allClearTitle: 'कोई सक्रिय जोखिम नहीं',
+    allClearCopy: 'चयनित समय सीमा में इस फसल के लिए किसी कीट या रोग के प्रकोप की रिपोर्ट नहीं है।',
+    allClearAdvice: 'हर सप्ताह पत्तियों और मिट्टी की नमी की जाँच जारी रखें। असामान्य धब्बे या कीट दिखें तो Diagnose पेज से रिपोर्ट करें।',
     loading: 'भू-स्थानिक निगरानी डेटा लोड हो रहा है...',
     mapNote: 'मैदानी निदान और जाल की गिनती के आधार पर सटीक ब्लॉक स्तरीय निगरानी क्षेत्र (3 किमी दायरा)।',
     selectedDistrict: 'चयनित हॉटस्पॉट',
@@ -650,7 +662,7 @@ const textContent = {
   },
 };
 
-const CROP_FILTER_OPTIONS = ['Rice', 'Potato', 'Tomato', 'Mustard', 'Mango'];
+const CROP_FILTER_OPTIONS = ['Rice', 'Potato', 'Jute', 'Mustard', 'Tea', 'Tomato', 'Brinjal', 'Chilli', 'Mango', 'Wheat', 'Maize'];
 
 export const getCropName = (crop, text) => {
   if (!crop) return '';
@@ -826,6 +838,21 @@ export default function HotspotsPage() {
 
         {/* Selected Cluster Details Drawer */}
         <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-[#0b221a] to-[#071611] p-6 shadow-xl flex flex-col justify-between">
+          {!activeCluster && selectedCrop ? (
+            <div>
+              <span className="inline-block rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-300 border border-emerald-400/40">
+                ✓ {text.allClearTitle}
+              </span>
+              <h3 className="mt-3 text-2xl font-black text-white">{getCropName(selectedCrop, text)}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{text.allClearCopy}</p>
+              <div className="mt-4 rounded-xl bg-emerald-950/50 p-4 border border-emerald-800/40">
+                <p className="mt-0 text-sm text-slate-200 leading-relaxed font-medium">
+                  {text.allClearAdvice}
+                </p>
+              </div>
+            </div>
+          ) : (
+          <>
           <div>
             <div className="flex items-center justify-between border-b border-emerald-900/60 pb-3 mb-4">
               <div>
@@ -896,6 +923,8 @@ export default function HotspotsPage() {
             </span>
             <span className="text-emerald-400 font-bold">{text.verifiedData}</span>
           </div>
+          </>
+          )}
         </div>
       </div>
 
@@ -925,7 +954,7 @@ export default function HotspotsPage() {
               {loading ? (
                 <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">{text.loading}</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">{text.noData}</td></tr>
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">{selectedCrop ? text.noDataForCrop(getCropName(selectedCrop, text)) : text.noData}</td></tr>
               ) : filtered.map((item) => {
                 const isCurrent = activeCluster?.id === item.id;
                 return (
