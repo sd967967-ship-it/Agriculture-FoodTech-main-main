@@ -51,4 +51,20 @@ class KisanMitraServiceTest {
         var weather = service.ask(new KisanMitraChatRequest("what is the weather today?", "Rice", "Nadia", "en"));
         assertThat(weather.answer()).contains("Nadia");
     }
+
+    @Test
+    void shouldAnswerFallbackInBengaliWhenLanguageIsBn() {
+        KisanMitraService service = new KisanMitraService(
+                new WBCropKnowledgeBase(),
+                new WeatherService(new WBCropKnowledgeBase()),
+                RestClient.builder(),
+                new ObjectMapper()
+        );
+
+        var response = service.ask(new KisanMitraChatRequest(
+                "dhaner pata holud hoye jachhe, ki korbo?", "Rice", "Nadia", "bn"));
+
+        assertThat(response.answer()).contains("আপনার প্রশ্ন");
+        assertThat(response.grounded()).isTrue();
+    }
 }

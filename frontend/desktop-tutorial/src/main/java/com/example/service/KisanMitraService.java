@@ -204,9 +204,14 @@ public class KisanMitraService {
     private String callHostedLlm(String question, String crop, String district, String language) throws Exception {
         String activeProvider = resolveProviderName();
         String context = buildContextPrompt(question, crop, district);
+        String languageName = switch (language) {
+            case "bn" -> "Bengali (write ONLY in Bengali script)";
+            case "hi" -> "Hindi (write ONLY in Devanagari script)";
+            default -> "the farmer's language (" + language + ")";
+        };
         String prompt = "You are KisanMitra, a patient agricultural assistant for smallholder farmers in India. "
-                + "Reply in the farmer's language (" + language + "): simple everyday words, short sentences, "
-                + "no jargon. If the farmer writes in Hindi or Bengali, answer in that language.\n"
+                + "Reply in " + languageName + ": simple everyday words, short sentences, "
+                + "no jargon. If the farmer writes in Hindi or Bengali, answer in that same language and script. Never answer in English when the farmer asked in another language.\n"
                 + "Rules:\n"
                 + "1. Give practical step-by-step advice a farmer can do today with locally available inputs.\n"
                 + "2. If crop, location, growth stage, symptoms, or soil/weather details are missing and needed, "
@@ -339,7 +344,7 @@ public class KisanMitraService {
                 lastFailure = attempt;
             }
         }
-        throw new IllegalStateException("All Gemini models failed.", lastFailure);
+        throw new IllegalStateException("All Gemini models failed: " + lastFailure, lastFailure);
     }
 
     private String callGroq(String prompt) throws Exception {
@@ -587,12 +592,33 @@ public class KisanMitraService {
                 : "West Bengal general guidance. Select your district on the home page for precise advice.";
         String cropLine = (crop != null && !crop.isBlank()) ? "Crop: " + crop + "." : "Crop not specified.";
         String prices = (crop != null && !crop.isBlank()) ? livePriceContext(crop, district) : "";
-        if (prices.isBlank()) prices = "Live mandi price is not available right now. Check the Market prices tab before selling.";
         String kvk = kvkContext(district);
         if (kvk.isBlank()) kvk = "For urgent decisions contact your local KVK or Kisan Call Centre 1800-180-1551.";
         String q = question == null ? "" : question.trim();
-        String prefix = "en".equals(language) ? "" : ("[" + language + "] ");
-        return prefix + "Based on local knowledge for " + cropLine + " " + districtContext
+        if ("bn".equals(language)) {
+            if (prices.isBlank()) prices = "লাইভ মান্ডির দাম এখন পাওয়া যাচ্ছে না। বিক্রির আগে বাজারদর ট্যাব দেখুন।";
+            return "স্থানীয় জ্ঞানের ভিত্তিতে (" + cropLine + " " + districtContext + ")\n\n"
+                    + "1. আপনার প্রশ্ন: " + q
+                    + "\n2. আজ যা করবেন: পাতার উপর-নিচ দেখুন, 5 সেমি গভীরে মাটির আর্দ্রতা দেখুন, বেশি আক্রান্ত পাতা তুলে ফেলুন।"
+                    + "\n3. মাটি শুকনো থাকলেই জল দিন; বৃষ্টির আগে স্প্রে করবেন না।"
+                    + "\n4. " + prices
+                    + "\n5. " + kvk
+                    + "\n\nসতর্ক থাকুন: দাগ ছড়ানো, গাছ নেতিয়ে পড়া বা নতুন পোকার আক্রমণ দেখলে পাতার পরিষ্কার ছবি তুলে Diagnose করুন এবং KVK-তে যান।"
+                    + " ফসলের ধাপ কী এবং লক্ষণ কবে থেকে শুরু?";
+        }
+        if ("hi".equals(language)) {
+            if (prices.isBlank()) prices = "लाइव मंडी भाव अभी उपलब्ध नहीं है। बेचने से पहले बाज़ार भाव टैब देखें।";
+            return "स्थानीय ज्ञान के आधार पर (" + cropLine + " " + districtContext + ")\n\n"
+                    + "1. आपका प्रश्न: " + q
+                    + "\n2. आज क्या करें: पत्तियों के ऊपर-नीचे देखें, 5 सेमी गहराई में मिट्टी की नमी जाँचें, बुरी तरह संक्रमित पत्ते हटाएँ।"
+                    + "\n3. मिट्टी सूखी हो तभी पानी दें; बारिश से पहले छिड़काव न करें।"
+                    + "\n4. " + prices
+                    + "\n5. " + kvk
+                    + "\n\nध्यान रखें: धब्बे फैलना, पौधों का मुरझाना या नए कीट दिखें तो पत्ते की साफ़ तस्वीर लेकर Diagnose करें और KVK जाएँ।"
+                    + " फसल किस अवस्था में है और लक्षण कब से हैं?";
+        }
+        if (prices.isBlank()) prices = "Live mandi price is not available right now. Check the Market prices tab before selling.";
+        return "Based on local knowledge for " + cropLine + " " + districtContext
                 + "\n\n1. Your question: " + q
                 + "\n2. What to do today: check leaves (top and underside), check soil moisture 5 cm deep, and remove any badly infected leaves."
                 + "\n3. Water only if soil is dry; avoid spraying before rain."
