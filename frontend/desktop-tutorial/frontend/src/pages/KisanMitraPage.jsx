@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { askKisanMitra } from '../api/cropApi';
 import { useLanguage } from '../context/LanguageContext';
+import useVoice from '../voice/useVoice';
 
 const copies = {
   en: {
@@ -26,6 +27,15 @@ const copies = {
     history: 'Conversation',
     withDiagnosis: 'Including your recent diagnosis as context.',
     sendLabel: 'Send message',
+    micLabel: 'Speak your question',
+    stopListenLabel: 'Stop listening',
+    listening: 'Listening… speak now',
+    readLabel: 'Read answer aloud',
+    stopReadLabel: 'Stop reading',
+    autoRead: 'Auto-read answers',
+    voiceUnsupported: 'Voice input is not supported on this device. Please type instead.',
+    micDenied: 'Microphone was blocked. Allow microphone access and try again.',
+    voiceFailed: 'Voice did not catch that. Please try again or type.',
   },
   bn: {
     heading: 'কিষানমিত্র',
@@ -50,6 +60,15 @@ const copies = {
     history: 'কথোপকথন',
     withDiagnosis: 'আপনার সাম্প্রতিক রোগ নির্ণয় প্রসঙ্গ হিসেবে যোগ করা হয়েছে।',
     sendLabel: 'বার্তা পাঠান',
+    micLabel: 'প্রশ্নটি বলুন',
+    stopListenLabel: 'শোনা বন্ধ করুন',
+    listening: 'শোনা হচ্ছে… বলুন',
+    readLabel: 'উত্তর শুনুন',
+    stopReadLabel: 'পড়া বন্ধ করুন',
+    autoRead: 'উত্তর স্বয়ংক্রিয় শুনুন',
+    voiceUnsupported: 'এই ডিভাইসে ভয়েস সমর্থিত নয়। লিখে জিজ্ঞাসা করুন।',
+    micDenied: 'মাইক্রোফোন বন্ধ আছে। অনুমতি দিয়ে আবার চেষ্টা করুন।',
+    voiceFailed: 'কথা বোঝা যায়নি। আবার বলুন বা লিখুন।',
   },
   hi: {
     heading: 'किसानमित्र',
@@ -74,6 +93,15 @@ const copies = {
     history: 'बातचीत',
     withDiagnosis: 'आपकी हाल की फसल जाँच प्रसंग के रूप में जोड़ी गई है।',
     sendLabel: 'संदेश भेजें',
+    micLabel: 'अपना प्रश्न बोलें',
+    stopListenLabel: 'सुनना बंद करें',
+    listening: 'सुन रहे हैं… बोलिए',
+    readLabel: 'उत्तर सुनें',
+    stopReadLabel: 'पढ़ना बंद करें',
+    autoRead: 'उत्तर स्वतः सुनें',
+    voiceUnsupported: 'इस डिवाइस पर वॉइस समर्थित नहीं है। कृपया लिखकर पूछें।',
+    micDenied: 'माइक्रोफ़ोन बंद है। अनुमति देकर पुनः प्रयास करें।',
+    voiceFailed: 'आवाज़ समझ नहीं आई। फिर बोलें या लिखें।',
   },
 };
 
@@ -110,8 +138,11 @@ export default function KisanMitraPage() {
   const [messages, setMessages] = useState(loadStored);
   const [loading, setLoading] = useState(false);
   const [diagContext, setDiagContext] = useState('');
+  const [voiceNote, setVoiceNote] = useState('');
   const bottomRef = useRef(null);
   const requestRef = useRef(0);
+  const spokenRef = useRef(null);
+  const voice = useVoice(language);
 
   const promptOptions = useMemo(() => [
     'What should I do if my rice field has yellowing leaves?',
@@ -129,7 +160,12 @@ export default function KisanMitraPage() {
       sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
     } catch { /* storage full or private mode — chat still works in memory */ }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [messages, loading]);
+    const last = messages[messages.length - 1];
+    if (last && last.role === 'ai' && spokenRef.current !== last.id && voice.autoRead && voice.ttsSupported) {
+      spokenRef.current = last.id;
+      voice.speak(last.text);
+    }
+  }, [messages, loading, voice]);
 
   const sendQuestion = async (rawQuestion, retryOfId = null) => {
     const question = (rawQuestion || '').trim();
@@ -186,8 +222,29 @@ export default function KisanMitraPage() {
     }
   };
 
+  const voiceErrorText = (code) => {
+    if (code === 'mic-denied') return text.micDenied;
+    if (code === 'voice-unsupported') return text.voiceUnsupported;
+    return text.voiceFailed;
+  };
+
+  const handleMic = () => {
+    if (voice.listening) {
+      voice.stopListening();
+      return;
+    }
+    if (!voice.sttSupported || loading) return;
+    setVoiceNote('');
+    voice.startListening(
+      (transcript) => setDraft((current) => (current ? `${current} ${transcript}` : transcript)),
+      (code) => setVoiceNote(voiceErrorText(code)),
+    );
+  };
+
   const clearChat = () => {
     requestRef.current += 1; // invalidate any in-flight response
+    voice.cancelSpeak();
+    spokenRef.current = null;
     setLoading(false);
     setMessages([]);
     try { sessionStorage.removeItem(CHAT_KEY); } catch { /* ignore */ }
@@ -237,7 +294,20 @@ export default function KisanMitraPage() {
           </div>
         ) : (
           <>
-            <div className="mb-3 flex justify-end">
+            <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+              {voice.ttsSupported && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (voice.autoRead) voice.cancelSpeak();
+                    voice.setAutoRead((current) => !current);
+                  }}
+                  aria-pressed={voice.autoRead}
+                  className={`min-h-[44px] rounded-lg border px-4 py-2 text-xs font-bold ${voice.autoRead ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-200' : 'border-slate-600 text-slate-300 hover:bg-slate-800'}`}
+                >
+                  🔊 {text.autoRead}: {voice.autoRead ? '✓' : '✕'}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={clearChat}
@@ -265,6 +335,16 @@ export default function KisanMitraPage() {
                       <p className="mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3 text-[13px] leading-6 text-amber-100">
                         <strong>{text.safety}: </strong>{msg.safety}
                       </p>
+                    )}
+                    {msg.role === 'ai' && voice.ttsSupported && (
+                      <button
+                        type="button"
+                        onClick={() => (voice.speaking ? voice.cancelSpeak() : voice.speak(msg.text))}
+                        aria-label={voice.speaking ? text.stopReadLabel : text.readLabel}
+                        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/20"
+                      >
+                        {voice.speaking ? `⏹ ${text.stopReadLabel}` : `🔊 ${text.readLabel}`}
+                      </button>
                     )}
                     {msg.role === 'error' && msg.retryQuestion && (
                       <button
@@ -296,6 +376,19 @@ export default function KisanMitraPage() {
 
         <form className="mt-4 flex items-end gap-2" onSubmit={handleSubmit}>
           <label htmlFor="mitra-input" className="sr-only">{text.placeholder}</label>
+          {voice.sttSupported && (
+            <button
+              type="button"
+              onClick={handleMic}
+              disabled={loading}
+              aria-label={voice.listening ? text.stopListenLabel : text.micLabel}
+              aria-pressed={voice.listening}
+              title={voice.listening ? text.stopListenLabel : text.micLabel}
+              className={`grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl text-xl shadow-md disabled:cursor-not-allowed disabled:opacity-50 ${voice.listening ? 'animate-pulse bg-red-500 text-white hover:bg-red-400' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+            >
+              🎙️
+            </button>
+          )}
           <textarea
             id="mitra-input"
             value={draft}
@@ -315,6 +408,11 @@ export default function KisanMitraPage() {
             {loading ? '…' : '➤'}
           </button>
         </form>
+        {(voice.listening || voiceNote) && (
+          <p role="status" className="mt-2 text-xs font-semibold leading-5 text-emerald-300">
+            {voice.listening ? text.listening : voiceNote}
+          </p>
+        )}
         <p className="mt-2 text-xs leading-5 text-slate-400">{text.offline}</p>
       </section>
     </div>

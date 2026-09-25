@@ -5,6 +5,10 @@
       "playwright": {
         "type": "local",
         "command": ["npx", "-y", "@playwright/mcp@latest", "--browser", "firefox", "--executable-path", "C:\\Program Files\\Mozilla Firefox\\firefox.exe"]
+      },
+      "vercel": {
+        "type": "remote",
+        "url": "https://mcp.vercel.com"
       }
     }
   }
