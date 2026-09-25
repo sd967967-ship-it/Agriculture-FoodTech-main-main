@@ -9,8 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,8 +60,12 @@ public class KisanMitraService {
                              MandiUpdates mandiUpdates) {
         this.knowledgeBase = knowledgeBase;
         this.weatherService = weatherService;
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofSeconds(25));
         this.restClient = restClientBuilder
                 .defaultHeader("User-Agent", "FasalSathi-KisanMitra/1.0")
+                .requestFactory(requestFactory)
                 .build();
         this.objectMapper = objectMapper;
         this.userQueryRepository = userQueryRepository;
@@ -158,6 +165,13 @@ public class KisanMitraService {
                     return response;
             }
         } catch (Exception exception) {
+                    try {
+                        String safe = String.valueOf(exception).replaceAll("key=[^\\s&]+", "key=***");
+                        org.slf4j.LoggerFactory.getLogger(KisanMitraService.class)
+                                .warn("KisanMitra hosted call failed, using local fallback: {}", safe);
+                    } catch (Exception ignored) {
+                        // logging must never break the fallback path
+                    }
                     String fallback = buildLocalAnswer(question, crop, district, language);
                     KisanMitraChatResponse response = new KisanMitraChatResponse(
                     fallback,
@@ -303,19 +317,29 @@ public class KisanMitraService {
         content.put("parts", List.of(Map.of("text", prompt)));
         payload.put("contents", List.of(content));
 
-        String rawResponse = restClient.post()
-                .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(payload)
-                .retrieve()
-                .body(String.class);
+        // Model names retire often; try current flash models in order.
+        List<String> candidates = List.of("gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest");
+        Exception lastFailure = null;
+        for (String model : candidates) {
+            try {
+                String rawResponse = restClient.post()
+                        .uri("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(payload)
+                        .retrieve()
+                        .body(String.class);
 
-        JsonNode root = objectMapper.readTree(rawResponse);
-        JsonNode text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
-        if (text.isMissingNode() || text.asText().isBlank()) {
-            throw new IllegalStateException("Gemini returned no answer text.");
+                JsonNode root = objectMapper.readTree(rawResponse);
+                JsonNode text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
+                if (text.isMissingNode() || text.asText().isBlank()) {
+                    throw new IllegalStateException("Gemini returned no answer text.");
+                }
+                return text.asText();
+            } catch (Exception attempt) {
+                lastFailure = attempt;
+            }
         }
-        return text.asText();
+        throw new IllegalStateException("All Gemini models failed.", lastFailure);
     }
 
     private String callGroq(String prompt) throws Exception {
